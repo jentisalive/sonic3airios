@@ -3,8 +3,9 @@
 This target compiles the C++ Oxygen Engine, LemonScript interpreter and SDL2 for
 arm64 iOS. It does not use WebKit, WebView, Emscripten or a web server.
 
-Status: initial port, not yet verified on physical hardware. A successful CI
-build alone does not establish that gameplay, audio or all mods work.
+Status: the native arm64 device build has compiled and packaged successfully in
+GitHub Actions with the iOS SDK. Physical-device testing is still pending. A
+successful CI build does not establish that gameplay, audio or all mods work.
 
 ## Build from Windows using GitHub Actions
 
@@ -52,12 +53,17 @@ cp -R build-ios/Release-iphoneos/Sonic3AIR.app ipa/Payload/
   renderer, matching the existing GLES-compatible path.
 - Read-only assets and script sources live in the app bundle. Settings, mods,
   save states and script-cache writes use Documents.
+- Rendering pauses while iOS marks the app minimized; settings are saved on
+  entering the background.
+- The bundle declares the minimum iOS version and iPhone/iPad device families,
+  including when built with Ninja instead of Xcode.
 - CI packages a device build into the required `Payload/*.app` IPA structure.
 
 ## Current limits and testing
 
-No physical iPhone or iOS SDK is available in the editing environment. Check the
-Actions run for actual compilation results and test the IPA on-device. In
+The editing environment has no physical iPhone. Compilation runs on a macOS
+GitHub runner with the iOS SDK; portable changes also pass a Linux C++ syntax
+check. Test the IPA on-device. In
 particular, validate first-launch ROM selection, landscape rotation, multitouch,
 audio interruption/background resume, saves and representative mods.
 
