@@ -184,7 +184,7 @@ void OpenGLUpscaler::renderImage(const Recti& rect, GLuint textureHandle, Vec2i 
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		// And then the second pass
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, FTX::Video->getDefaultFramebuffer());
 
 		if (mPass0Texture.getSize() != textureResolution)
 		{

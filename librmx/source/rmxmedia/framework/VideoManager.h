@@ -50,6 +50,7 @@ namespace rmx
 
 		uint64 getNativeWindowHandle() const;
 		SDL_Window* getMainWindow() const { return mMainWindow; }
+		uint32 getDefaultFramebuffer() const;
 
 	private:
 		bool setVideoMode(const VideoConfig& videoConfig);

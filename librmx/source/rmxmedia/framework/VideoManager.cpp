@@ -22,6 +22,9 @@
 	#define WIN32_LEAN_AND_MEAN
 	#include "CleanWindowsInclude.h"
 
+#elif defined(PLATFORM_IOS)
+	#include <SDL_syswm.h>
+
 #elif defined(PLATFORM_WEB)
 	#include <emscripten.h>
 	#include <emscripten/html5.h>
@@ -227,8 +230,25 @@ namespace rmx
 	*/
 	}
 
+	uint32 VideoManager::getDefaultFramebuffer() const
+	{
+	#if defined(PLATFORM_IOS)
+		// UIKit has a nonzero framebuffer. Ask SDL again after rotation / recreation.
+		SDL_Window* window = mMainWindow ? mMainWindow : SDL_GL_GetCurrentWindow();
+		SDL_SysWMinfo info;
+		SDL_VERSION(&info.version);
+		if (window && SDL_GetWindowWMInfo(window, &info) && info.subsystem == SDL_SYSWM_UIKIT)
+			return info.info.uikit.framebuffer;
+	#endif
+		return 0;
+	}
+
 	void VideoManager::beginRendering()
 	{
+	#if defined(PLATFORM_IOS)
+		if (mVideoConfig.mRenderer == VideoConfig::Renderer::OPENGL)
+			glBindFramebuffer(GL_FRAMEBUFFER, getDefaultFramebuffer());
+	#endif
 		if (mVideoConfig.mAutoClearScreen)
 		{
 		#ifdef RMX_WITH_OPENGL_SUPPORT

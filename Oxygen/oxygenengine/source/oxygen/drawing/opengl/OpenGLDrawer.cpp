@@ -445,7 +445,7 @@ void OpenGLDrawer::performRendering(const DrawCollection& drawCollection)
 				SetWindowRenderTargetDrawCommand& dc = drawCommand->as<SetWindowRenderTargetDrawCommand>();
 
 				// Bind no frame buffer at all
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				glBindFramebuffer(GL_FRAMEBUFFER, FTX::Video->getDefaultFramebuffer());
 
 				const Recti& viewport = dc.mViewport;
 				mInternal.mCurrentViewport = viewport;

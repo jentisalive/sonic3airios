@@ -59,7 +59,12 @@ void ConfigurationImpl::preLoadInitialization()
 {
 	SharedDatabase::initialize();
 
+#if defined(PLATFORM_IOS)
+	// The signed app bundle is read-only; compiled script caches belong in Documents.
+	mCompiledScriptSavePath = mAppDataPath + L"scripts.bin";
+#else
 	mCompiledScriptSavePath = L"saves/scripts.bin";
+#endif
 }
 
 bool ConfigurationImpl::loadConfigurationInternal(JsonSerializer& serializer)

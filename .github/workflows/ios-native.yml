@@ -1,0 +1,58 @@
+name: Native iOS IPA
+on:
+  push:
+    branches: [main, ios-native]
+    paths:
+      - 'Oxygen/**'
+      - 'librmx/**'
+      - 'framework/**'
+      - '.github/workflows/ios-native.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-native-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure native arm64 iPhone build
+        run: >-
+          cmake -S Oxygen/sonic3air/build/_ios -B build-ios -G Xcode
+          -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos
+          -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
+      - name: Compile
+        shell: bash
+        run: |
+          set -o pipefail
+          cmake --build build-ios --config Release --parallel 3 2>&1 | tee build-ios/build.log
+      - name: Package unsigned IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          app="build-ios/Release-iphoneos/Sonic3AIR.app"
+          test -f "$app/Sonic3AIR"
+          test -f "$app/content/sonic3air/scripts/main.lemon"
+          test -f "$app/content/sonic3air/data/metadata.json"
+          test -f "$app/content/oxygenengine/data/oxygen_icon.png"
+          mkdir -p ipa/Payload
+          cp -R "$app" ipa/Payload/
+          cd ipa
+          /usr/bin/zip -qry ../Sonic3AIR-iOS-unsigned.ipa Payload
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sonic3AIR-iOS-unsigned
+          path: Sonic3AIR-iOS-unsigned.ipa
+          if-no-files-found: error
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-log
+          path: build-ios/build.log
+          if-no-files-found: ignore
