@@ -19,9 +19,12 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+      - name: Ensure Ninja is available
+        run: command -v ninja || brew install ninja
       - name: Configure native arm64 iPhone build
         run: >-
-          cmake -S Oxygen/sonic3air/build/_ios -B build-ios -G Xcode
+          cmake -S Oxygen/sonic3air/build/_ios -B build-ios -G Ninja
+          -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5
           -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos
           -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
           -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
@@ -34,7 +37,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          app="build-ios/Release-iphoneos/Sonic3AIR.app"
+          app="build-ios/Sonic3AIR.app"
           test -f "$app/Sonic3AIR"
           test -f "$app/content/sonic3air/scripts/main.lemon"
           test -f "$app/content/sonic3air/data/metadata.json"
