@@ -7,6 +7,7 @@
 */
 
 #include "rmxmedia.h"
+#include "rmxmedia/framework/WindowPixelMapping.h"
 
 #if defined(PLATFORM_WINDOWS)
 	#pragma warning(disable: 4005)	// Macro redefinition of APIENTRY
@@ -241,6 +242,21 @@ namespace rmx
 			return info.info.uikit.framebuffer;
 	#endif
 		return 0;
+	}
+
+	Recti VideoManager::getDrawableRect(const Recti& windowRect) const
+	{
+	#if defined(PLATFORM_IOS) && !defined(RMX_USE_SDL3)
+		SDL_Window* window = mMainWindow ? mMainWindow : SDL_GL_GetCurrentWindow();
+		if (window)
+		{
+			Vec2i logicalSize(0, 0), drawableSize(0, 0);
+			SDL_GetWindowSize(window, &logicalSize.x, &logicalSize.y);
+			SDL_GL_GetDrawableSize(window, &drawableSize.x, &drawableSize.y);
+			return mapWindowRectToPixels(windowRect, logicalSize, drawableSize);
+		}
+	#endif
+		return windowRect;
 	}
 
 	void VideoManager::beginRendering()

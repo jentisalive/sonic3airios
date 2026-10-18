@@ -18,3 +18,7 @@ ln -s "$repo_root/framework/external/sdl/SDL2/include" "$test_build_dir/include/
   "$repo_root/librmx/source/rmxbase/memory/OneTimeAllocPool.cpp" \
   -Wl,--gc-sections -o "$test_build_dir/default_profile_test"
 "$test_build_dir/default_profile_test" "$repo_root/Oxygen/sonic3air"
+"${CXX:-c++}" -std=c++17 -I "$repo_root/librmx/source" \
+  "$repo_root/Oxygen/sonic3air/build/_ios/tests/window_pixel_mapping_test.cpp" \
+  -o "$test_build_dir/window_pixel_mapping_test"
+"$test_build_dir/window_pixel_mapping_test"

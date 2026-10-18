@@ -3,16 +3,17 @@
 This target compiles the C++ Oxygen Engine, LemonScript interpreter and SDL2 for
 arm64 iOS. It does not use WebKit, WebView, Emscripten or a web server.
 
-Status: the native arm64 device build has compiled and packaged successfully in
-GitHub Actions with the iOS SDK. Physical-device testing is still pending. A
-successful CI build does not establish that gameplay, audio or all mods work.
+Status: the user confirmed version 0.1.1 launches and plays on iPhone. Version
+0.1.2 enables Retina output to address blurred low-resolution presentation.
+The Retina change still needs device testing; not all features/mods are verified.
 
 ## Download
 
 The unsigned IPA is published as a prerelease under **Releases**, tag
-`ios-v0.1.1`. The Actions artifact remains available as well. Version 0.1.1 fixes
-the empty default script entry point that caused `Failed to load base scripts`
-and adds the upstream iPhone/iPad icons. Re-testing gameplay on-device is pending.
+`ios-v0.1.2`. The Actions artifact remains available as well. Version 0.1.2
+enables native Retina backing pixels for window viewports, clipping and final
+upscaling while keeping logical layout/input and offscreen texture sizes intact.
+Version 0.1.1 fixed the script entry point and added iPhone/iPad icons.
 
 ## Build from Windows using GitHub Actions
 
