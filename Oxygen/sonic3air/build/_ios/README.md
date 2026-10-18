@@ -10,7 +10,8 @@ The Retina change still needs device testing; not all features/mods are verified
 ## Download
 
 The unsigned IPA is published as a prerelease under **Releases**, tag
-`ios-v0.1.2`. The Actions artifact remains available as well. Version 0.1.2
+`ios-v0.1.3`. The Actions artifact remains available as well. Version 0.1.3
+adds English mod installation instructions and a native mods-folder button. Version 0.1.2
 enables native Retina backing pixels for window viewports, clipping and final
 upscaling while keeping logical layout/input and offscreen texture sizes intact.
 Version 0.1.1 fixed the script entry point and added iPhone/iPad icons.
@@ -33,6 +34,11 @@ engine and keeps a copy in Documents. No ROM is included or downloaded.
 
 Files → On My iPhone → Sonic 3 AIR contains the `mods` folder, settings, saves and
 `logfile.txt`. Unzip mods into `mods` using the usual Sonic 3 A.I.R. layout.
+The empty Mods screen also offers **Open mods folder**. This presents the system
+Files picker with `Documents/mods` as its initial directory, creating the folder
+if needed. iOS may restore another location; the path above remains available
+manually. Selecting a file in this browser does not import or replace it.
+Restart the game after adding mods so it scans the new folders.
 The engine's existing mobile touch controls are used.
 
 ## Local build on macOS

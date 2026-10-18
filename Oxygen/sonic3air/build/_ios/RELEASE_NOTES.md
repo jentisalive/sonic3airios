@@ -1,13 +1,13 @@
-Экспериментальная нативная сборка Sonic 3 A.I.R. для iPhone и iPad, без WebView.
+Experimental native Sonic 3 A.I.R. for iPhone and iPad, without WebView.
 
-- Включён режим Retina: окно использует настоящее разрешение экрана вместо растянутого кадра в логических точках.
-- Исправлено преобразование экранных областей отрисовки и отсечения в пиксели Retina.
-- Финальное масштабирование игры учитывает физическое разрешение экрана.
-- Логические координаты меню, сенсорных кнопок и текстур сохранены, чтобы элементы управления не смещались.
-- В `logfile.txt` добавлена строка `Retina output` с размерами окна и кадрового буфера.
+- Added English mod installation instructions to the empty Mods screen.
+- Added **Open mods folder**, opening the native Files picker with the engine's actual `Documents/mods` folder as its starting location.
+- The folder is created automatically if missing. Browsing does not import or replace any files.
+- Extract each mod into its own folder inside `mods`, then restart the game to scan for new mods.
+- Includes the Retina rendering and app icons from the previous releases.
 
-Скачайте **Sonic3AIR-iOS-unsigned.ipa** ниже. Это неподписанная IPA: используйте свой способ подписи и установки. Требуется ваш совместимый ROM Sonic 3 & Knuckles.
+Download **Sonic3AIR-iOS-unsigned.ipa** below and sign/install it using your usual method. Your compatible Sonic 3 & Knuckles ROM is required and is not included.
 
-Версия 0.1.1 уже проверена пользователем: игра запускается. Изменение Retina в 0.1.2 ещё нужно проверить на устройстве. Тесты покрывают масштаб 1x/2x/3x, поворот экрана, дробный масштаб и нулевые размеры.
+The iOS SDK build and automated bundle checks run in CI. Opening the folder and managing mods still need verification on an actual iPhone/iPad. iOS controls the Files picker's starting location; if it restores another location, browse to **On My iPhone / iPad > Sonic 3 AIR > mods**.
 
-Исходники этой сборки доступны по тегу `ios-v0.1.2`. Лицензия проекта — GPL-3.0.
+Source tag: `ios-v0.1.3`. Project license: GPL-3.0.

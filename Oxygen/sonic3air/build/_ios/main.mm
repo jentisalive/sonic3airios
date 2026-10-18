@@ -1,9 +1,41 @@
 // Native iOS entry point. SDL2main owns UIApplicationMain and invokes SDL_main.
 #import <UIKit/UIKit.h>
+#include <SDL_syswm.h>
 #include "sonic3air/pch.h"
 #include "sonic3air/EngineDelegate.h"
 #include "sonic3air/GameArgumentsReader.h"
 #include "oxygen/platform/PlatformFunctions.h"
+
+// Present Files at the actual writable folder used by the engine.
+// The picker is only for browsing/managing files: selecting an item imports nothing.
+static void openIOSDirectory(const std::wstring& path)
+{
+    NSString* folderPath = [NSString stringWithUTF8String:rmx::convertToUTF8(path).c_str()];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSURL* folderURL = [NSURL fileURLWithPath:folderPath isDirectory:YES];
+        NSError* error = nil;
+        if (![NSFileManager.defaultManager createDirectoryAtURL:folderURL
+                withIntermediateDirectories:YES attributes:nil error:&error]) {
+            SDL_Log("Cannot open mods folder: %s", error.localizedDescription.UTF8String);
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Mods folder",
+                error.localizedDescription.UTF8String, nullptr);
+            return;
+        }
+        SDL_Window* window = SDL_GetKeyboardFocus();
+        if (!window) return;
+        SDL_SysWMinfo info;
+        SDL_VERSION(&info.version);
+        if (!SDL_GetWindowWMInfo(window, &info) || info.subsystem != SDL_SYSWM_UIKIT) return;
+        UIViewController* presenter = info.info.uikit.window.rootViewController;
+        if (!presenter || presenter.presentedViewController) return;
+        UIDocumentPickerViewController* picker = [[UIDocumentPickerViewController alloc]
+            initWithDocumentTypes:@[@"public.item"] inMode:UIDocumentPickerModeOpen];
+        picker.directoryURL = folderURL;
+        picker.title = @"Mods folder";
+        picker.modalPresentationStyle = UIModalPresentationFullScreen;
+        [presenter presentViewController:picker animated:YES completion:nil];
+    });
+}
 
 static bool isCompatibleROM(NSData* data)
 {
@@ -120,6 +152,7 @@ int main(int argc, char** argv)
         Configuration& config = Configuration::instance();
         config.mAppDataPath = String(documents.path.UTF8String).toStdWString() + L"/";
         PlatformFunctions::mExAppDataPath = config.mAppDataPath;
+        PlatformFunctions::mOpenDirectoryHandler = openIOSDirectory;
         config.mRomPath = String(rom.path.UTF8String).toStdWString();
         config.mSaveStatesDir = config.mAppDataPath + L"savestates/";
         NSString* resources = [NSBundle.mainBundle.resourcePath stringByAppendingPathComponent:@"content/sonic3air"];
