@@ -1,107 +1,109 @@
-# Sonic 3 A.I.R.
+<div align="center">
 
-Source code incl. dependencies for "Sonic 3 - Angel Island Revisited", a fan-made remaster of Sonic 3 & Knuckles.
+<img src="Oxygen/sonic3air/build/_xcode/sonic3air_iosApp/Assets.xcassets/AppIcon.appiconset/180.png" width="112" alt="Sonic 3 A.I.R. icon" />
 
-Project homepage: https://sonic3air.org/
+# Sonic 3 A.I.R. for iOS
 
+**Angel Island, on your iPhone and iPad.**
 
-### Disclaimer
+An experimental native port of Sonic 3 A.I.R., powered by the Oxygen Engine, SDL2 and UIKit.
 
-Sonic 3 A.I.R. is a non-profit fan game project. It is not affiliated in any way with SEGA or Sonic Team, the original creators of Sonic 3 and Sonic & Knuckles.
+![Platform](https://img.shields.io/badge/platform-iOS_13%2B-147EFB?style=flat-square)
+![Architecture](https://img.shields.io/badge/architecture-arm64-555555?style=flat-square)
+![Status](https://img.shields.io/badge/status-experimental-F5A623?style=flat-square)
+[![License](https://img.shields.io/badge/license-GPL--3.0-2EA44F?style=flat-square)](LICENSE)
 
-Sonic the Hedgehog is a trademark of SEGA. All copyrights regarding Sonic the Hedgehog, including characters, names, terms, art, and music belong to SEGA. All registered trademarks belong to SEGA and Sonic Team.
+**[Download v0.1.3](https://github.com/jentelmenskii-ai/sonic3airios/releases/tag/ios-v0.1.3)** · **[All releases](https://github.com/jentelmenskii-ai/sonic3airios/releases)** · **[Build guide](Oxygen/sonic3air/build/_ios/README.md)** · **[Original project](https://sonic3air.org/)**
 
-The developers of Sonic 3 A.I.R. have no intent to infringe said copyrights and registered trademarks.
-No financial gain is made from this project.
+</div>
 
-Any commercial use of this project without SEGA's explicit consent is strictly prohibited.
+---
 
+## A native adventure
 
-## Repository overview
+This port runs the game's C++ engine and LemonScript interpreter directly on iOS, with OpenGL ES presentation. It does not use a web version, WebView or a local web server.
 
-This repository is split into several different projects:
-* The larger external dependencies (namely SDL2, Ogg/Vorbis, zlib) inside the "framework" directory. These are copies of the respective open source projects, with a few custom changes applied where needed - see the "how-to-build.txt" files in there for details.
-* The librmx libraries that together with the external dependencies build a foundation for my own projects (S3AIR and my private stuff). This primarily consists of rmxbase, a collection of helper and utility classes, and rmxmedia, which is providing a basic game framework built on top of SDL2 & OpenGL.
-* Lemonscript language library, with compiler and runtime environment for script execution.
-* Oxygen Engine, the backbone game engine powering Sonic 3 A.I.R. This includes input, graphics, audio handling, and all the other game application stuff, as well as a simulation environment built around lemonscript that - as far as needed for the purposes of S3AIR - emulates aspects of Sega Genesis hardware. Note that Oxygen can be built as its own application (OxygenApp) that lacks the S3AIR C++ code.
-* S3AIR-specific C++ code, scripts and data in the "Oxygen/sonic3air" directory. Yes, that's what it's named.
+- **Made for touch** — the engine's mobile controls work on iPhone and iPad.
+- **Retina output** — window rendering and final scaling use the display's backing pixels.
+- **Your files, accessible** — saves, settings and mods live in the app's Documents folder.
+- **Mods within reach** — English installation guidance and an **Open mods folder** button.
+- **Build from Windows** — GitHub Actions compiles and packages the iOS app on a macOS runner.
 
+> **Bring your own game.** A compatible, unmodified Sonic 3 & Knuckles ROM is required. The ROM is not included or downloaded by the app.
 
-## How to build
+## Get started
 
-For information on how to build for different platforms, find the readme files in the respective subdirectories of "Oxygen/sonic3air/build":
-* Windows: "_vstudio"
-* Mac:     "_xcode"
-* Linux:   "_cmake"
-* Android: "_android"
-* Web:     "_emscripten"
-* Switch:  "_make" (unmaintained)
+| Requirement | Details |
+| :--- | :--- |
+| Device | An arm64 iPhone or iPad running iOS 13 or later |
+| App | `Sonic3AIR-iOS-unsigned.ipa` from a release's **Assets** section |
+| Installation | Your compatible signing and sideloading method |
+| Game data | Your own compatible Sonic 3 & Knuckles ROM |
 
-Additional platform ports:
-* Vita: See https://github.com/v-atamanenko/sonic3air
+1. Download the **[v0.1.3 IPA](https://github.com/jentelmenskii-ai/sonic3airios/releases/download/ios-v0.1.3/Sonic3AIR-iOS-unsigned.ipa)**.
+2. Sign and install the app using your usual method.
+3. Launch **Sonic 3 AIR**, tap **Choose ROM…**, and select your ROM in Files.
+4. Let the game prepare its scripts on the first launch, then play.
 
+The IPA is unsigned. This is an experimental sideloaded build, rather than an App Store or TestFlight release. When updating, keep the app's Documents folder to preserve your saves and mods.
 
-## External dependencies
+## Install mods
 
-External libraries and code used in this project:
-* SDL2 - in "framework/external/sdl"
-* libogg & libvorbis - in "framework/external/ogg-vorbis"
-* zlib incl. minizip - in "framework/external/zlib"
-* libcurl - in "framework/external/curl"
-* Dear ImGui - in "framework/external/imgui"
-* jsoncpp - in "librmx/source/rmxbase/jsoncpp"
-* GLEW - in "librmx/source/rmxmedia/glew"
-* Sound chip emulation related code from Genesis Plus GX - in "Oxygen/oxygenengine/source/oxygen/simulation/sound"
-* Discord Game SDK - in "Oxygen/sonic3air/source/external/discord_game_sdk"
-* xBRZ upscaler shader code - in "Oxygen/oxygenengine/data/shader" and once more in "Oxygen/sonic3air/data/shader"
-* Hqx upscaler shader code & data files - in "Oxygen/oxygenengine/data/shader" and once more in "Oxygen/sonic3air/data/shader"
+Open the app's folder in **Files**:
 
+**On My iPhone / On My iPad → Sonic 3 AIR → mods**
 
-## Contributors
+1. Extract the mod archive.
+2. Put each mod's folder inside `mods`, keeping its original contents and folder structure.
+3. Restart Sonic 3 A.I.R. so it scans for new mods.
+4. Open **Mods** in the game and enable the mods you want to use.
 
-Thanks to all contributors!
+When no mods are installed, **Open mods folder** opens the native Files picker with `Documents/mods` as its starting directory. iOS may restore another location; use the path above if needed.
 
-Source code contributions by:
-* Sappharad
-* Heyjoeway
-* Carjem Generations
-* Ultracoolguy
-* gl33ntwine
-* Rinnegatamante
-* MDashK
-* CodenameGamma
-* LelJader
+## What's new
 
-Remastered soundtrack by:
-* SpinnRG
+| Version | Highlights | Download |
+| :--- | :--- | :--- |
+| **0.1.3** | English mod instructions and native mods-folder access | [Release](https://github.com/jentelmenskii-ai/sonic3airios/releases/tag/ios-v0.1.3) |
+| **0.1.2** | Retina window rendering, clipping and final scaling | [Release](https://github.com/jentelmenskii-ai/sonic3airios/releases/tag/ios-v0.1.2) |
+| **0.1.1** | Script startup fix and iPhone/iPad app icons | [Release](https://github.com/jentelmenskii-ai/sonic3airios/releases/tag/ios-v0.1.1) |
 
-Game scripts & other contributions by:
-* Vinegar
-* Thorn
-* Legobouwer
-* GFX32
-* Dynamic Lemons
-* AmberChromatic
-* iCloudius
-* D.A. Garden
-* Alieneer
-* 3Pills
-* Elsie The Pict
-* nabbup
-* mrgrassman14
-* Vague Rant
-* PaperTriangle
-* Crappy Productions
-* AtomicRey
+## Build it yourself
 
-Additional thanks:
-* All contributors of the Sonic 3 / Sonic & Knuckles Disassembly (https://github.com/sonicretro/skdisasm), which has proven itself a valuable source of information on S3&K code
+**On Windows:** open **[Actions → Native iOS IPA](https://github.com/jentelmenskii-ai/sonic3airios/actions/workflows/ios-native.yml)**, choose **Run workflow**, select `ios-native`, and download the IPA artifact after the run completes. A local Mac is not required for this route.
 
+**On macOS:** use the CMake commands in the **[native iOS build guide](Oxygen/sonic3air/build/_ios/README.md)**. The target builds the vendored dependencies for the iOS SDK and packages source assets without a ROM.
 
-## Want to contribute?
+<details>
+<summary><strong>Repository map</strong></summary>
 
-Here's the bad news: This repository isn't meant for direct distribution. If you have your own changes that you want to share with the world, create a **fork** of this repo, instead of making pull requests. I'd very much appreciate that as I really want to avoid having too much overhead with managing / reviewing code changes made by others. I'd rather use the time to continue with implementing my own ideas into the project.
+| Path | Contents |
+| :--- | :--- |
+| `Oxygen/sonic3air/build/_ios` | Native entry point, app metadata, CMake target and checks |
+| `Oxygen/sonic3air/source` | Game-specific C++ code |
+| `Oxygen/sonic3air/scripts` | LemonScript game scripts |
+| `Oxygen/oxygenengine` | Oxygen Engine |
+| `Oxygen/lemonscript` | LemonScript compiler and interpreter |
+| `librmx` | Shared utility and media libraries |
+| `framework/external` | Vendored dependencies, including SDL2 |
+| `docs/releases` | English release descriptions |
 
-Plus there's a second reason, and that's an important one for me as well: It's about code ownership and software licenses. It's much easier to use the librmx, lemonscript and Oxygen Engine code elsewhere under a different license than GPL if I don't have to ask a larger group of contributors whether they are okay with it. Because there are some plans for possible future projects using these codes as a foundation, maybe even commercial ones where GPL could make things complicated.
+Other platform targets and the original contributor list are documented in the [upstream README](docs/UPSTREAM.md).
 
--- Euka
+</details>
+
+## Testing and troubleshooting
+
+Version 0.1.1 has been confirmed to launch and play on an iPhone. Version 0.1.3 passed native arm64 iOS compilation, bundle/resource/icon checks, the script-profile regression test and Retina rectangle mapping tests.
+
+Retina presentation and the folder browser still need device verification. Not every feature or mod has been tested. Simulator builds and App Store distribution are outside the current workflow.
+
+If something goes wrong, keep `logfile.txt` from the app's Documents folder. Include the app version, device, iOS version, steps to reproduce, and that log when reporting a problem. First-launch script compilation may take longer than in an official packaged release.
+
+## Credits and license
+
+**Sonic 3 A.I.R. and the Oxygen Engine were created by Eukaryot.** This repository is an unofficial iOS port of [Eukaryot/sonic3air](https://github.com/Eukaryot/sonic3air). The remastered soundtrack is by **SpinnRG**. Thanks to the original developers and every contributor; the complete upstream acknowledgments and dependency list are preserved in [docs/UPSTREAM.md](docs/UPSTREAM.md).
+
+The project is distributed under **[GNU GPL v3](LICENSE)**. See the original license files for third-party components.
+
+Sonic 3 A.I.R. is a non-profit fan game and is not affiliated with SEGA or Sonic Team. Sonic the Hedgehog and related characters, names, art and music belong to SEGA and their respective rights holders. No financial gain is made from this project. Any commercial use without SEGA's explicit consent is strictly prohibited. The [original project disclaimer](docs/UPSTREAM.md#disclaimer) is preserved with the upstream documentation.

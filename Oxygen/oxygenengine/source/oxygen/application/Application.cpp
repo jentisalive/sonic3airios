@@ -244,6 +244,9 @@ void Application::sdlEvent(const SDL_Event& ev)
 		case SDL_APP_WILLENTERBACKGROUND:
 		{
 			EngineMain::getDelegate().onApplicationLostFocus();
+		#if defined(PLATFORM_IOS)
+			Configuration::instance().saveSettings();
+		#endif
 			break;
 		}
 
