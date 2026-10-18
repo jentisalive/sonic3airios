@@ -58,11 +58,19 @@ set_target_properties(Sonic3AIR PROPERTIES
   MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_LIST_DIR}/Info.plist.in"
   MACOSX_BUNDLE_GUI_IDENTIFIER "org.sonic3air.native-ios"
   MACOSX_BUNDLE_BUNDLE_NAME "Sonic 3 AIR"
-  MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
-  MACOSX_BUNDLE_BUNDLE_VERSION "1"
+  MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.1"
+  MACOSX_BUNDLE_BUNDLE_VERSION "2"
   XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
   XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED "NO"
   XCODE_ATTRIBUTE_ENABLE_BITCODE "NO")
+set(ICON_SOURCE "${ROOT}/Oxygen/sonic3air/build/_xcode/sonic3air_iosApp/Assets.xcassets/AppIcon.appiconset")
+add_custom_command(TARGET Sonic3AIR POST_BUILD
+  COMMAND "${CMAKE_COMMAND}" -E copy "${ICON_SOURCE}/120.png" "$<TARGET_BUNDLE_DIR:Sonic3AIR>/AppIcon60x60@2x.png"
+  COMMAND "${CMAKE_COMMAND}" -E copy "${ICON_SOURCE}/180.png" "$<TARGET_BUNDLE_DIR:Sonic3AIR>/AppIcon60x60@3x.png"
+  COMMAND "${CMAKE_COMMAND}" -E copy "${ICON_SOURCE}/76.png" "$<TARGET_BUNDLE_DIR:Sonic3AIR>/AppIcon76x76.png"
+  COMMAND "${CMAKE_COMMAND}" -E copy "${ICON_SOURCE}/152.png" "$<TARGET_BUNDLE_DIR:Sonic3AIR>/AppIcon76x76@2x.png"
+  COMMAND "${CMAKE_COMMAND}" -E copy "${ICON_SOURCE}/167.png" "$<TARGET_BUNDLE_DIR:Sonic3AIR>/AppIcon83.5x83.5@2x.png"
+  VERBATIM)
 # Bundle source assets so CI needs neither an original game ROM nor a desktop game run.
 # Scripts compile on device using the existing LemonScript interpreter (no JIT).
 add_custom_command(TARGET Sonic3AIR POST_BUILD

@@ -7,6 +7,13 @@ Status: the native arm64 device build has compiled and packaged successfully in
 GitHub Actions with the iOS SDK. Physical-device testing is still pending. A
 successful CI build does not establish that gameplay, audio or all mods work.
 
+## Download
+
+The unsigned IPA is published as a prerelease under **Releases**, tag
+`ios-v0.1.1`. The Actions artifact remains available as well. Version 0.1.1 fixes
+the empty default script entry point that caused `Failed to load base scripts`
+and adds the upstream iPhone/iPad icons. Re-testing gameplay on-device is pending.
+
 ## Build from Windows using GitHub Actions
 
 1. Open the repository's **Actions** tab. If GitHub has disabled workflows for the
