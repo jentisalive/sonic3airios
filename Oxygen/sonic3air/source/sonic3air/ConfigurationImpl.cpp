@@ -134,6 +134,9 @@ void ConfigurationImpl::serializeSettingsInternal(JsonSerializer& serializer)
 	// Input
 	serializer.serialize("GamepadVisualStyle", mGamepadVisualStyle);
 
+	// Selected edition is global; each edition has independent progress.
+	serializer.serialize("ClassicMode", mClassicMode);
+
 	// Game simulation
 	serializer.serialize("SimulationFrequency", mSimulationFrequency);
 	if (serializer.isReading())

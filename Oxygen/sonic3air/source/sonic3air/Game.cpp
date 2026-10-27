@@ -12,6 +12,8 @@
 #include "sonic3air/audio/AudioOut.h"
 #include "sonic3air/data/SharedDatabase.h"
 #include "sonic3air/data/TimeAttackData.h"
+#include "sonic3air/data/ClassicModeRules.h"
+#include "oxygen/simulation/PersistentData.h"
 #include "sonic3air/helper/GameUtils.h"
 #include "sonic3air/helper/DiscordIntegration.h"
 #include "sonic3air/menu/GameApp.h"
@@ -27,6 +29,8 @@
 #include "oxygen/drawing/software/Blitter.h"
 #include "oxygen/engine/modding/ModManager.h"
 #include "oxygen/helper/FileHelper.h"
+#include "oxygen/platform/PlatformFunctions.h"
+#include "oxygen/engine/EngineMain.h"
 #include "oxygen/rendering/parts/RenderParts.h"
 #include "oxygen/simulation/CodeExec.h"
 #include "oxygen/simulation/EmulatorInterface.h"
@@ -81,7 +85,9 @@ void Game::startup(EmulatorInterface& emulatorInterface)
 	mEmulatorInterface = &emulatorInterface;
 	mPlayerRecorder.setEmulatorInterface(emulatorInterface);
 
-	mPlayerProgress.load();
+	mAnniversarySaveStatesDir = Configuration::instance().mSaveStatesDir;
+	mAnniversarySaveStatesDirLocal = Configuration::instance().mSaveStatesDirLocal;
+	loadModeProfile();
 	mBlueSpheresRendering.startup();
 	mGameClient.setupClient();
 	checkActiveModsUsedFeatures();
@@ -243,6 +249,9 @@ void Game::registerScriptBindings(lemon::Module& module)
 
 uint32 Game::getSetting(uint32 settingId, bool ignoreGameMode) const
 {
+	uint32 forcedValue;
+	if (Configuration::instance().mClassicMode && ClassicModeRules::forcedSetting(settingId, forcedValue))
+		return forcedValue;
 	const SharedDatabase::Setting* setting = SharedDatabase::getSetting(settingId);
 
 	if (!ignoreGameMode && isInTimeAttackMode())
@@ -290,6 +299,9 @@ uint32 Game::getSetting(uint32 settingId, bool ignoreGameMode) const
 
 void Game::setSetting(uint32 settingId, uint32 value)
 {
+	uint32 forcedValue;
+	if (Configuration::instance().mClassicMode && ClassicModeRules::forcedSetting(settingId, forcedValue))
+		return;
 	RMX_CHECK(nullptr != SharedDatabase::getSetting(settingId), "Setting not found", return);
 	ConfigurationImpl::instance().mActiveGameSettings->setValue(settingId, value);
 }
@@ -838,6 +850,9 @@ void Game::checkActiveModsUsedFeatures()
 
 void Game::startIntoGameInternal()
 {
+	// Menus keep their native layout; every game/intro entry chooses a real field size.
+	if (!isInMainMenuMode())
+		VideoOut::instance().setScreenSize(ClassicModeRules::gameSize(Configuration::instance().mClassicMode));
 	// Setup defaults -- these should not get used outside of Time Attack anyway
 	mLastZoneAndAct = 0;
 	mLastCharacters = 0;
@@ -1065,4 +1080,38 @@ void Game::endSkippableCutscene()
 bool Game::isInSkippableCutscene()
 {
 	return mSkippableCutsceneFrames > 0;
+}
+
+
+bool Game::setClassicMode(bool enabled)
+{
+    Configuration& config = Configuration::instance();
+    if (config.mClassicMode == enabled) return true;
+    const std::wstring root = ClassicModeRules::saveRoot(config.mAppDataPath, enabled);
+    if (!FTX::FileSystem->exists(root + L"storage/") && !FTX::FileSystem->createDirectory(root + L"storage/"))
+    {
+        PlatformFunctions::showMessageBox("Save profile", "Could not create the save folder. The mode was not changed.");
+        return false;
+    }
+    // Complete all writes in the old profile before changing the active base path.
+    mPlayerProgress.save(true);
+    PersistentData::instance().updatePersistentData();
+    config.mClassicMode = enabled;
+    loadModeProfile();
+    EngineMain::instance().setVSyncMode(config.mFrameSync);
+    config.saveSettings();
+    return true;
+}
+
+void Game::loadModeProfile()
+{
+    Configuration& config = Configuration::instance();
+    const std::wstring root = ClassicModeRules::saveRoot(config.mAppDataPath, config.mClassicMode);
+    config.mPersistentDataBasePath = root + L"storage/";
+    config.mSaveStatesDir = config.mClassicMode ? root + L"savestates/" : mAnniversarySaveStatesDir;
+    config.mSaveStatesDirLocal = config.mClassicMode ? root + L"savestates/" : mAnniversarySaveStatesDirLocal;
+    PersistentData::instance().loadFromBasePath(config.mPersistentDataBasePath);
+    mPlayerProgress.reset();
+    mPlayerProgress.load();
+    TimeAttackData::clearCache();
 }

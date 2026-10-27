@@ -194,6 +194,8 @@ public:
 	int	 mLoadLevel = -1;
 	int	 mUseCharacters = 1;
 	int  mStartPhase = 0;
+	// Persisted by the Sonic game; presentation is 30 FPS, simulation stays 60 Hz.
+	bool mClassicMode = false;
 	int  mSimulationFrequency = 60;
 	GameRecorder mGameRecorder;
 

@@ -23,6 +23,7 @@ namespace
 void PersistentData::clear()
 {
 	mFiles.clear();
+	mPendingFileSaves.clear();
 	++mChangeCounter;
 }
 

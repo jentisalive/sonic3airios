@@ -9,12 +9,18 @@ The Retina change still needs device testing; not all features/mods are verified
 
 ## Download
 
-The unsigned IPA is published as a prerelease under **Releases**, tag
-`ios-v0.1.3`. The Actions artifact remains available as well. Version 0.1.3
-adds English mod installation instructions and a native mods-folder button. Version 0.1.2
-enables native Retina backing pixels for window viewports, clipping and final
-upscaling while keeping logical layout/input and offscreen texture sizes intact.
-Version 0.1.1 fixed the script entry point and added iPhone/iPad icons.
+The regular app now includes **Classic Mode / Anniversary Mode** under **Mods**.
+Download the unsigned IPA from [v0.2.0](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.0).
+
+Classic Mode uses real 320 × 240 gameplay, 4:3 square pixels and a 30 FPS presentation
+cap with 60 Hz logic. Native menus retain their original aspect ratio. Its progress,
+time-attack records and save states live in `Documents/classic/`, while Anniversary
+uses the original save locations. Switching modes returns to the intro/title screen.
+The selection is saved across restarts.
+
+Classic locks the six visual settings shown in the release notes. Anniversary
+preferences are retained separately from these effective values. ROM and mods
+remain shared. This is an update to the regular app, not the standalone 4x3 build.
 
 ## Build from Windows using GitHub Actions
 

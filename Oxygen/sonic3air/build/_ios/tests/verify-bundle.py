@@ -7,7 +7,7 @@ from pathlib import Path
 app = Path(sys.argv[1])
 with (app / "Info.plist").open("rb") as stream:
     info = plistlib.load(stream)
-assert info["CFBundleShortVersionString"] == "0.1.3"
+assert info["CFBundleShortVersionString"] == "0.2.0"
 assert info["UIDeviceFamily"] == [1, 2]
 assert info["CFBundleSupportedPlatforms"] == ["iPhoneOS"]
 assert info["CFBundleIcons"]["CFBundlePrimaryIcon"]["CFBundleIconFiles"]

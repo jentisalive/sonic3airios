@@ -35,6 +35,7 @@ namespace mainmenu
 		OPTIONS		= 0x10,
 		EXTRAS		= 0x11,
 		MODS		= 0x12,
+		MODE_TOGGLE = 0x13,
 		EXIT		= 0xff
 	};
 }
@@ -45,13 +46,14 @@ MainMenu::MainMenu(MenuBackground& menuBackground) :
 {
 	// Build up menu structure
 	{
-		mMenuEntries.reserve(6);
+		mMenuEntries.reserve(8);
 		mMenuEntries.addEntry("NORMAL GAME", mainmenu::NORMAL_GAME);
 		mMenuEntries.addEntry("ACT SELECT",  mainmenu::ACT_SELECT);
 		mMenuEntries.addEntry("TIME ATTACK", mainmenu::TIME_ATTACK);
 		mMenuEntries.addEntry("OPTIONS",	 mainmenu::OPTIONS);
 		mMenuEntries.addEntry("EXTRAS",		 mainmenu::EXTRAS);
 		mMenuEntries.addEntry("MODS",		 mainmenu::MODS);
+		mMenuEntries.addEntry("CLASSIC MODE", mainmenu::MODE_TOGGLE);
 
 	#if !defined(PLATFORM_ANDROID) && !defined(PLATFORM_IOS) && !defined(PLATFORM_WEB)
 		mMenuEntries.addEntry("EXIT",		 mainmenu::EXIT);
@@ -73,6 +75,7 @@ GameMenuBase::BaseState MainMenu::getBaseState() const
 		case State::APPEAR:				 return BaseState::FADE_IN;
 		case State::SHOW:				 return BaseState::SHOW;
 		case State::FADE_TO_TITLESCREEN: return BaseState::FADE_OUT;
+		case State::FADE_TO_MODE: return BaseState::FADE_OUT;
 		case State::FADE_TO_DATASELECT:	 return BaseState::FADE_OUT;
 		case State::FADE_TO_SUBMENU:	 return BaseState::FADE_OUT;
 		default:						 return BaseState::INACTIVE;
@@ -92,6 +95,9 @@ void MainMenu::setBaseState(BaseState baseState)
 
 void MainMenu::onFadeIn()
 {
+	for (size_t i = 0; i < mMenuEntries.size(); ++i)
+		if (mMenuEntries[i].mData == mainmenu::MODE_TOGGLE)
+			mMenuEntries[i].mText = Configuration::instance().mClassicMode ? "ANNIVERSARY MODE" : "CLASSIC MODE";
 	mState = State::APPEAR;
 
 	mMenuBackground->showPreview(false);
@@ -175,6 +181,12 @@ void MainMenu::update(float timeElapsed)
 						openMods();
 						break;
 
+					case mainmenu::MODE_TOGGLE:
+						playMenuSound(0x63);
+						mState = State::FADE_TO_MODE;
+						GameApp::instance().getGameView().startFadingOut();
+						break;
+
 					case mainmenu::EXIT:
 						exitGame();
 						break;
@@ -216,6 +228,17 @@ void MainMenu::update(float timeElapsed)
 					GameApp::instance().openTitleScreen();
 					break;
 
+				case State::FADE_TO_MODE:
+					if (Game::instance().setClassicMode(!Configuration::instance().mClassicMode))
+						GameApp::instance().openTitleScreen();
+					else
+					{
+						onFadeIn();
+						GameApp::instance().getGameView().startFadingIn();
+						return;
+					}
+					break;
+
 				case State::FADE_TO_DATASELECT:
 					startNormalGame();
 					break;
@@ -242,7 +265,7 @@ void MainMenu::render()
 
 	Drawer& drawer = EngineMain::instance().getDrawer();
 
-	const int positionY[] = { 31, 58, 85,  125, 146, 167,  195 };
+	const int positionY[] = { 31, 58, 85,  125, 146, 167, 188, 211 };
 	for (size_t line = 0; line < mMenuEntries.size(); ++line)
 	{
 		bool isMainEntry = (line < 3);

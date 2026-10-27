@@ -172,6 +172,8 @@ void EngineMain::switchToRenderMethod(Configuration::RenderMethod newRenderMetho
 
 void EngineMain::setVSyncMode(Configuration::FrameSyncType frameSyncMode)
 {
+	if (Configuration::instance().mClassicMode)
+		frameSyncMode = Configuration::FrameSyncType::VSYNC_OFF;
 	Configuration& config = Configuration::instance();
 	if ((config.mRenderMethod == Configuration::RenderMethod::OPENGL_FULL) || (config.mRenderMethod == Configuration::RenderMethod::OPENGL_SOFT))
 	{

@@ -98,6 +98,13 @@ void GameView::updateGameViewport()
 	const Recti gameScreenRect = VideoOut::instance().getScreenRect();
 	mGameViewport.setResolution(gameScreenRect.getSize());
 
+	if (config.mClassicMode)
+	{
+		// Square pixels: the 320x240 game is 4:3; native menus keep their own aspect.
+		mGameViewport.buildRectAspectFit(mRect);
+		return;
+	}
+
 	switch (config.mUpscaling)
 	{
 		default:

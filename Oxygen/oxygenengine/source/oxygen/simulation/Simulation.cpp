@@ -295,7 +295,7 @@ void Simulation::update(float timeElapsed)
 		mCurrentTargetFrame = roundToDouble(mCurrentTargetFrame + 1.0);
 	}
 
-	const bool useFrameInterpolation = (Configuration::instance().mFrameSync == Configuration::FrameSyncType::FRAME_INTERPOLATION);
+	const bool useFrameInterpolation = !Configuration::instance().mClassicMode && (Configuration::instance().mFrameSync == Configuration::FrameSyncType::FRAME_INTERPOLATION);
 	const uint32 requiredFrameNumber = useFrameInterpolation ? (uint32)std::ceil(mCurrentTargetFrame) : (uint32)roundToInt(mCurrentTargetFrame);
 
 	if (mFrameNumber < requiredFrameNumber)
@@ -563,7 +563,7 @@ int Simulation::setRewind(int rewindSteps)
 
 float Simulation::getSimulationFrequency() const
 {
-	return (mSimulationFrequencyOverride > 0.0f) ? mSimulationFrequencyOverride : (float)Configuration::instance().mSimulationFrequency;
+	return Configuration::instance().mClassicMode ? 60.0f : ((mSimulationFrequencyOverride > 0.0f) ? mSimulationFrequencyOverride : (float)Configuration::instance().mSimulationFrequency);
 }
 
 void Simulation::setSpeed(float emulatorSpeed)

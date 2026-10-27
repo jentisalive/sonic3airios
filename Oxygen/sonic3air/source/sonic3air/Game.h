@@ -43,6 +43,7 @@ public:
 
 	void startup(EmulatorInterface& emulatorInterface);
 	void shutdown();
+	bool setClassicMode(bool enabled);
 	void update(float timeElapsed);
 
 	void registerScriptBindings(lemon::Module& module);
@@ -137,6 +138,9 @@ private:
 
 	BlueSpheresRendering mBlueSpheresRendering;
 	PlayerProgress mPlayerProgress;
+	void loadModeProfile();
+	std::wstring mAnniversarySaveStatesDir;
+	std::wstring mAnniversarySaveStatesDirLocal;
 	PlayerRecorder mPlayerRecorder;
 	GameClient mGameClient;
 	DynamicSprites mDynamicSprites;
