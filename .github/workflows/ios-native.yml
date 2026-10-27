@@ -24,7 +24,9 @@ jobs:
         run: bash Oxygen/sonic3air/build/_ios/tests/run-profile-test.sh
   build:
     needs: profile-test
-    runs-on: macos-14
+    runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
