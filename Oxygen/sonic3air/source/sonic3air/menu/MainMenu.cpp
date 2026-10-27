@@ -275,7 +275,7 @@ void MainMenu::render()
 
 		const int lineOffset = (mState < State::SHOW) ? (int)(mMenuEntries.size() - 1 - line) : (int)line;
 		const int px = (isMainEntry ? 218 : 232) + roundToInt(saturate(1.0f - mVisibility - lineOffset * 0.1f) * 200.0f - mMenuEntries[line].mAnimation.mVisibility * 10.0f);
-		const int py = positionY[line];
+		const int py = roundToInt(positionY[line] * ((float)mRect.height / 224.0f));
 		const bool isSelected = ((int)line == mMenuEntries.mSelectedEntryIndex);
 		const bool isSelectable = entry.isFullyInteractable();
 		const Color colorBG = isSelectable ? (isSelected ? Color(1.0f, 1.0f, 0.5f, mVisibility) : Color(0.5f, 0.75f, 1.0f, mVisibility)) : Color(0.4f, 0.4f, 0.4f, mVisibility * 0.25f);

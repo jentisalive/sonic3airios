@@ -1,38 +1,39 @@
 <div align="center">
 
-## Sonic 3 A.I.R. for iOS · v0.2.0
+## Sonic 3 A.I.R. for iOS · v0.2.1
 
-**Classic Mode & Anniversary Mode — in one app**
+**Classic Mode: memory safety & complete 4:3 menus**
 
-[Download unsigned IPA](https://github.com/jentisalive/sonic3airios/releases/download/ios-v0.2.0/Sonic3AIR-iOS-unsigned.ipa)
+[Download unsigned IPA](https://github.com/jentisalive/sonic3airios/releases/download/ios-v0.2.1/Sonic3AIR-iOS-unsigned.ipa)
 
 </div>
 
-### Switch editions from the main menu
+### Fixed zone crashes
 
-Select **Classic Mode** below **Mods** to restart at the intro/title screen in Classic Mode. The same entry becomes **Anniversary Mode** to switch back. The selection is remembered after closing the app.
+Version 0.2.0 incorrectly used a 240-line game field. The original horizontal-scroll buffer has room for **224 lines**, ending at `0xffffe37f`; the dynamic-object list starts immediately afterward at `0xffffe380`. Extra scroll writes could corrupt that list while moving through AIZ and other zones.
 
-### Classic Mode
+- Restored the supported **320 × 224** Classic simulation field.
+- Constrained Classic resolution changes at the video and script interfaces.
+- Bounded the native scroll writer to the real buffer size as an additional safeguard.
+- Removed the additional gameplay area at the bottom of the screen. Intro and gameplay use the original 224-line field with Genesis-style pixel-aspect correction for 4:3 display.
 
-- **Real 320 × 240 gameplay** with square pixels and a 4:3 aspect ratio. The wide frame is not squeezed horizontally. Black bars appear on wider displays.
-- **30 FPS presentation**, with game logic continuing at 60 Hz so gameplay and music retain normal speed. Frame interpolation is disabled in Classic Mode.
-- **Locked visual settings:** Character Rotation: Original; Time Display: Original; Lives Display: Mobile; Speed Shoes Effect: None (Original); Fast Run Animation: None (Original); Flicker Effects: As Original.
-- **Separate progress:** save slots, achievements, unlocks, time-attack records and save states use `Documents/classic/`. Existing Anniversary data stays in its usual location.
-- Full-size native menus retain their original aspect ratio, keeping text readable. The 4:3 format applies to game screens and the intro/title sequence.
+### Full 4:3 menus
 
-### Anniversary Mode
+- Native menus now render into a separate **400 × 300 presentation canvas**, with square-pixel text and UI. The simulation remains 224 lines high.
+- Reflowed the main-menu rows, scrolling areas, backgrounds and footer positions for the taller menu layout.
+- All menu screens use a centered 4:3 output frame. They are not cropped from a narrow framebuffer or horizontally squeezed from a wide menu.
+- The animated decorative backdrop fills the canvas; its logo is rendered separately to preserve its proportions.
+- Locked Classic options show their actual preset values instead of “not available”.
 
-Switching back restores widescreen gameplay, normal frame presentation, existing saves and your original visual preferences. The locked Classic preferences do not overwrite them.
+### Preserved
 
-### Install
+**Classic Mode / Anniversary Mode** remains below Mods. Switching returns to the intro/title screen. Classic retains its 30 FPS presentation cap, normal-speed 60 Hz logic, fixed visual settings and separate progress under **Documents/classic/**. Anniversary preferences and saves remain in their existing locations. Both modes share ROM and mods.
 
-This updates the **regular Sonic 3 AIR app**, using its original bundle identifier. Keep the app's Documents folder when updating. The previous standalone **Sonic 3 AIR 4x3** app is a separate older edition; this release adds the switch to the regular port.
+### Install & validation
 
-Sign/install **Sonic3AIR-iOS-unsigned.ipa** using your usual method. A compatible Sonic 3 & Knuckles ROM is required and is not included. Both modes share the same ROM and mods folder.
+Install **Sonic3AIR-iOS-unsigned.ipa** over the regular Sonic 3 AIR app, preserving Documents. Your compatible Sonic 3 & Knuckles ROM is required and is not included.
 
-### Validation
-
-Automated checks exercise the actual persistent-data read/write implementation across separate profiles, repeated reloads, Classic presets, square-pixel output and touch mapping, plus existing script-profile and Retina regressions. Native arm64 iOS compilation and bundle checks run in CI. Mode transitions, the title sequence, gameplay, 30 FPS pacing and mod compatibility still need device testing.
+Regression tests exercise the scroll-buffer boundary, oversized resolution requests, the independent save profiles, 4:3 menu geometry and input mapping. CI compiles the arm64 iOS app and checks the bundle. A physical-device replay of the affected AIZ section, other zones and menu transitions is still needed.
 
 [Source](https://github.com/jentisalive/sonic3airios/tree/ios-native) · [Original project](https://sonic3air.org/)
 

@@ -539,7 +539,7 @@ void ModsMenu::update(float timeElapsed)
 	{
 		for (int i = 0; i < 2; ++i)
 		{
-			mTabs[i].mScrolling.setVisibleAreaHeight((float)(224 - std::max(15, getInfoOverlayHeight())));
+			mTabs[i].mScrolling.setVisibleAreaHeight((float)(mRect.height - std::max(15, getInfoOverlayHeight())));
 			mTabs[i].mScrolling.update(timeElapsed);
 		}
 	}
@@ -601,7 +601,7 @@ void ModsMenu::render()
 
 	const int globalOffsetX = -roundToInt(saturate(1.0f - mVisibility) * 300.0f);
 
-	int infoOverlayPosition = 224;
+	int infoOverlayPosition = mRect.height;
 	if (mInfoOverlay.mVisibility > 0.0f)
 	{
 		infoOverlayPosition -= getInfoOverlayHeight();
@@ -626,11 +626,11 @@ void ModsMenu::render()
 
 		if (tabIndex == 0)
 		{
-			drawer.pushScissor(Recti(0, 0, rightTabStart + globalOffsetX, 224));
+			drawer.pushScissor(Recti(0, 0, rightTabStart + globalOffsetX, mRect.height));
 		}
 		else
 		{
-			drawer.pushScissor(Recti(rightTabStart + globalOffsetX, 0, 400, 224));
+			drawer.pushScissor(Recti(rightTabStart + globalOffsetX, 0, 400, mRect.height));
 		}
 
 		{
@@ -666,7 +666,7 @@ void ModsMenu::render()
 			const bool isSelected = ((int)index == menuEntries.mSelectedEntryIndex && tabIndex == mActiveTab);
 			renderContext.mIsSelected = isSelected;
 
-			const float lineOffset = (mState < State::SHOW) ? (224.0f - (float)rect.y - startY) : 0.0f;
+			const float lineOffset = (mState < State::SHOW) ? ((float)mRect.height - (float)rect.y - startY) : 0.0f;
 
 			Recti visualRect = rect;
 			visualRect.x -= roundToInt(saturate(1.0f - mVisibility - lineOffset / 500.0f) * 300.0f);
@@ -736,7 +736,7 @@ void ModsMenu::render()
 	{
 		drawer.popScissor();
 
-		Recti rect(globalOffsetX, infoOverlayPosition, 400, 224 - infoOverlayPosition);
+		Recti rect(globalOffsetX, infoOverlayPosition, 400, mRect.height - infoOverlayPosition);
 		drawer.drawRect(rect, Color(0.0f, 0.0f, 0.0f, mVisibility * 0.9f));
 		drawer.drawRect(Recti(rect.x, rect.y - 1, rect.width, 1), Color(1.0f, 1.0f, 1.0f, mVisibility));
 

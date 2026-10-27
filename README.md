@@ -13,7 +13,7 @@ An experimental native port of Sonic 3 A.I.R., powered by the Oxygen Engine, SDL
 ![Status](https://img.shields.io/badge/status-experimental-F5A623?style=flat-square)
 [![License](https://img.shields.io/badge/license-GPL--3.0-2EA44F?style=flat-square)](LICENSE)
 
-**[Download v0.2.0](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.0)** · **[All releases](https://github.com/jentisalive/sonic3airios/releases)** · **[Build guide](Oxygen/sonic3air/build/_ios/README.md)** · **[Original project](https://sonic3air.org/)**
+**[Download v0.2.1](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.1)** · **[All releases](https://github.com/jentisalive/sonic3airios/releases)** · **[Build guide](Oxygen/sonic3air/build/_ios/README.md)** · **[Original project](https://sonic3air.org/)**
 
 </div>
 
@@ -40,7 +40,7 @@ This port runs the game's C++ engine and LemonScript interpreter directly on iOS
 | Installation | Your compatible signing and sideloading method |
 | Game data | Your own compatible Sonic 3 & Knuckles ROM |
 
-1. Download the **[v0.1.3 IPA](https://github.com/jentisalive/sonic3airios/releases/download/ios-v0.2.0/Sonic3AIR-iOS-unsigned.ipa)**.
+1. Download the **[v0.1.3 IPA](https://github.com/jentisalive/sonic3airios/releases/download/ios-v0.2.1/Sonic3AIR-iOS-unsigned.ipa)**.
 2. Sign and install the app using your usual method.
 3. Launch **Sonic 3 AIR**, tap **Choose ROM…**, and select your ROM in Files.
 4. Let the game prepare its scripts on the first launch, then play.
@@ -50,10 +50,10 @@ The IPA is unsigned. This is an experimental sideloaded build, rather than an Ap
 ## Classic Mode & Anniversary Mode
 
 Select **Classic Mode** below **Mods** in the regular app's main menu. The game
-returns to the intro/title screen with 4:3 gameplay (320 × 240), square pixels,
+returns to the intro/title screen with 4:3 gameplay (320 × 224 with Genesis-style pixel-aspect correction),
 30 FPS presentation and the fixed visual preset. Game logic remains at 60 Hz.
 Select **Anniversary Mode** in the same place to restore widescreen gameplay and
-your original visual preferences. Native menus keep their original aspect ratio.
+your original visual preferences. Native menus use a separate 400 × 300 presentation canvas, preserving the shape of text and UI.
 
 Classic progress, time-attack records and save states use **Documents/classic/**.
 Anniversary keeps the existing save locations. The selected mode is remembered;
@@ -77,7 +77,8 @@ When no mods are installed, **Open mods folder** opens the native Files picker w
 
 | Version | Highlights | Download |
 | :--- | :--- | :--- |
-| **0.2.0** | Integrated Classic/Anniversary switch, independent saves, square-pixel 4:3 and 30 FPS | [Release](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.0) |
+| **0.2.1** | Fix Classic scroll-buffer corruption, remove the extra gameplay rows, and add complete 4:3 menu layouts | [Release](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.1) |
+| **0.2.0** | Integrated Classic/Anniversary switch, independent saves, 4:3 and 30 FPS | [Release](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.0) |
 | **0.1.3** | English mod instructions and native mods-folder access | [Release](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.1.3) |
 | **0.1.2** | Retina window rendering, clipping and final scaling | [Release](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.1.2) |
 | **0.1.1** | Script startup fix and iPhone/iPad app icons | [Release](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.1.1) |

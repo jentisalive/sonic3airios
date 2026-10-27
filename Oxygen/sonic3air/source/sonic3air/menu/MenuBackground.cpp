@@ -22,6 +22,7 @@
 #include "oxygen/application/gameview/GameView.h"
 #include "oxygen/application/video/VideoOut.h"
 #include "oxygen/engine/EngineMain.h"
+#include "oxygen/helper/FileHelper.h"
 #include "oxygen/simulation/CodeExec.h"
 #include "oxygen/simulation/Simulation.h"
 
@@ -35,31 +36,31 @@ namespace detail
 		allGameMenus.push_back(gameMenu);
 	}
 
-	void drawQuad(Drawer& drawer, float splitX1, float splitX2, DrawerTexture& texture)
+	void drawQuad(Drawer& drawer, float splitX1, float splitX2, DrawerTexture& texture, float height)
 	{
 		DrawerMeshVertex quad[4];
 		quad[0].mPosition.set(splitX1 + 15.0f, 0.0f);
 		quad[1].mPosition.set(splitX2 + 15.0f, 0.0f);
-		quad[2].mPosition.set(splitX1 - 15.0f, 224.0f);
-		quad[3].mPosition.set(splitX2 - 15.0f, 224.0f);
+		quad[2].mPosition.set(splitX1 - 15.0f, height);
+		quad[3].mPosition.set(splitX2 - 15.0f, height);
 
 		for (int i = 0; i < 4; ++i)
 		{
 			quad[i].mTexcoords.x = (quad[i].mPosition.x + 8.0f) / 416.0f;
-			quad[i].mTexcoords.y = (quad[i].mPosition.y) / 224.0f;
+			quad[i].mTexcoords.y = (quad[i].mPosition.y) / height;
 		}
 		drawer.drawQuad(quad, texture);
 	}
 
-	void drawSeparator(Drawer& drawer, float splitX, float animationOffset, bool mirrored)
+	void drawSeparator(Drawer& drawer, float splitX, float animationOffset, bool mirrored, float height)
 	{
 		DrawerMeshVertex quad[4];
 		if (mirrored)
 		{
 			quad[0].mPosition.set(splitX + 10.0f, -3.0f);
 			quad[1].mPosition.set(splitX + 25.0f,  0.0f);
-			quad[2].mPosition.set(splitX - 20.0f, 224.0f);
-			quad[3].mPosition.set(splitX -  5.0f, 227.0f);
+			quad[2].mPosition.set(splitX - 20.0f, height);
+			quad[3].mPosition.set(splitX -  5.0f, height + 3.0f);
 
 			quad[0].mTexcoords.set(1.0f, animationOffset);
 			quad[1].mTexcoords.set(0.0f, animationOffset);
@@ -70,8 +71,8 @@ namespace detail
 		{
 			quad[0].mPosition.set(splitX +  5.0f, -3.0f);
 			quad[1].mPosition.set(splitX + 20.0f,  0.0f);
-			quad[2].mPosition.set(splitX - 25.0f, 224.0f);
-			quad[3].mPosition.set(splitX - 10.0f, 227.0f);
+			quad[2].mPosition.set(splitX - 25.0f, height);
+			quad[3].mPosition.set(splitX - 10.0f, height + 3.0f);
 
 			quad[0].mTexcoords.set(0.0f, animationOffset);
 			quad[1].mTexcoords.set(1.0f, animationOffset);
@@ -222,17 +223,17 @@ void MenuBackground::render()
 
 		if (splitLight < splitBlue)
 		{
-			detail::drawQuad(drawer, splitLight, splitBlue, global::mDataSelectBackground);
+			detail::drawQuad(drawer, splitLight, splitBlue, global::mDataSelectBackground, (float)mRect.height);
 		}
 
 		if (splitBlue < splitMax)
 		{
-			detail::drawQuad(drawer, splitBlue, splitMax, global::mLevelSelectBackground);
+			detail::drawQuad(drawer, splitBlue, splitMax, global::mLevelSelectBackground, (float)mRect.height);
 		}
 
 		if (splitAlter > splitMin)
 		{
-			detail::drawQuad(drawer, splitMin, splitAlter, global::mDataSelectAltBackground);
+			detail::drawQuad(drawer, splitMin, splitAlter, global::mDataSelectAltBackground, (float)mRect.height);
 		}
 	}
 
@@ -244,17 +245,17 @@ void MenuBackground::render()
 
 		if (splitLight > splitMin && splitLight < splitMax)
 		{
-			detail::drawSeparator(drawer, splitLight, separatorAnimationOffset, false);
+			detail::drawSeparator(drawer, splitLight, separatorAnimationOffset, false, (float)mRect.height);
 		}
 
 		if (splitBlue > splitMin && splitBlue < splitMax)
 		{
-			detail::drawSeparator(drawer, splitBlue, separatorAnimationOffset, true);
+			detail::drawSeparator(drawer, splitBlue, separatorAnimationOffset, true, (float)mRect.height);
 		}
 
 		if (splitAlter > splitMin && splitAlter < splitMax)
 		{
-			detail::drawSeparator(drawer, splitAlter, separatorAnimationOffset, true);
+			detail::drawSeparator(drawer, splitAlter, separatorAnimationOffset, true, (float)mRect.height);
 		}
 	}
 	drawer.setSamplingMode(SamplingMode::POINT);
@@ -280,6 +281,17 @@ void MenuBackground::render()
 		drawer.drawSprite(Vec2i(0, 8), rmx::constMurmur2_64("level_preview_border_left"), Color(1.0f, 1.0f, 1.0f, mPreviewVisibility));
 		drawer.drawSpriteRect(Recti(10, 8, (int)mRect.width - 20, 100), rmx::constMurmur2_64("level_preview_border_center"), Color(1.0f, 1.0f, 1.0f, mPreviewVisibility));
 		drawer.drawSprite(Vec2i((int)mRect.width, 8), rmx::constMurmur2_64("level_preview_border_right"), Color(1.0f, 1.0f, 1.0f, mPreviewVisibility));
+	}
+
+	if (Configuration::instance().mClassicMode && titleLeft < titleRight)
+	{
+		// Draw the logo at its own aspect, outside the zoomed animated backdrop.
+		if (!mClassicLogo.isValid())
+			FileHelper::loadTexture(mClassicLogo, L"data/sprites/sonic3air_logo.png");
+		const int logoX = roundToInt(interpolate(splitMin, splitMax, normalizedTitleRight) - 91.0f);
+		drawer.pushScissor(Recti(roundToInt(titleLeft), 0, roundToInt(titleRight - titleLeft), mRect.height));
+		drawer.drawRect(Recti(logoX - 75, 12, 150, 24), mClassicLogo);
+		drawer.popScissor();
 	}
 
 	GuiBase::render();
@@ -439,6 +451,7 @@ void MenuBackground::setGameStartedMenu()
 
 void MenuBackground::openMenu(GameMenuBase& menu)
 {
+	Configuration::instance().mClassicMenuActive = true;
 	// The menus only really work in a fixed resolution, so make sure that one is set
 	VideoOut::instance().setScreenSize(400, 224);
 

@@ -1,6 +1,8 @@
 #include "sonic3air/data/ClassicModeRules.h"
 #include "oxygen/simulation/PersistentData.h"
 #include "oxygen/helper/ScaledScreenRect.h"
+#include "sonic3air/scriptimpl/ScrollBuffer.h"
+#include <array>
 #include <filesystem>
 #include <cassert>
 #include <iostream>
@@ -13,7 +15,7 @@ int main(int argc, char** argv)
     const auto normal = ClassicModeRules::saveRoot(root, false);
     const auto classic = ClassicModeRules::saveRoot(root, true);
     assert(normal == root && classic != normal);
-    assert(ClassicModeRules::gameSize(true) == Vec2i(320,240));
+    assert(ClassicModeRules::gameSize(true) == Vec2i(320,224));
     assert(ClassicModeRules::gameSize(false) == Vec2i(400,224));
     using S = SharedDatabase::Setting;
     uint32 value = 99;
@@ -51,18 +53,49 @@ int main(int argc, char** argv)
     assert(std::filesystem::is_regular_file(normal + L"storage/s3air_savedata.bin"));
     assert(std::filesystem::is_regular_file(classic + L"storage/s3air_savedata.bin"));
 
-    // Square-pixel classic output: horizontal and vertical scales must match.
-    for (Vec2i source : {Vec2i(320,240), Vec2i(400,224)}) {
-        ScaledScreenRect viewport;
-        viewport.setResolution(source);
-        viewport.buildRectAspectFit(Recti(0,0,1920,1080));
-        const Recti rect = viewport.getRectOnScreen();
-        assert(std::abs(float(rect.width)/source.x - float(rect.height)/source.y) < .01f);
-        Vec2f center = viewport.getInnerPositionFromScreen(Vec2f(rect.x + rect.width*.5f, rect.y + rect.height*.5f));
-        assert(std::abs(center.x - source.x*.5f) < .01f);
-        assert(std::abs(center.y - source.y*.5f) < .01f);
-        if (source.x == 320) assert(rect.width == 1440 && rect.height == 1080);
-        else assert(rect.width > 1900); // Menus retain width rather than being squeezed into 4:3.
+    // 224 scanlines end exactly where the dynamic-object list begins.
+    struct Memory {
+        std::array<uint8, 65536> bytes{};
+        void writeMemory32(uint32 address, uint32 value) {
+            const uint32 index = address & 0xffff;
+            assert(index + 4 <= bytes.size());
+            for (int i=0; i<4; ++i) bytes[index+i] = uint8(value >> (24 - 8*i));
+        }
+    } memory;
+    for (int requested : {-1, 0, 224, 240, 300, 1024}) {
+        memory.bytes.fill(0xcc);
+        s3air::writeLegacyScrollOffsets(memory, 0x12345678, requested);
+        for (int i=0xe380; i<0xe400; ++i) assert(memory.bytes[i] == 0xcc);
+        if (requested >= 224) assert(memory.bytes[0xe37f] == 0x78);
     }
-    std::cout << "Classic profile tests passed: locked presets, independent real save files, reload, square pixels and touch mapping\n";
+    for (Vec2i requested : {Vec2i(320,240), Vec2i(320,300), Vec2i(400,300), Vec2i(640,480)}) {
+        assert(ClassicScreenLayout::constrain(true, requested).y == 224);
+        assert(ClassicScreenLayout::constrain(false, requested) == requested);
+    }
+    assert(ClassicScreenLayout::compositionSize(true, Vec2i(400,224)) == Vec2i(400,300));
+    assert(ClassicScreenLayout::compositionSize(true, Vec2i(320,224)) == Vec2i(320,224));
+    assert(ClassicScreenLayout::compositionSize(true, Vec2i(320,224), true) == Vec2i(400,300));
+
+    // Every Classic screen has the same physical 4:3 frame, including menus.
+    for (Vec2i source : {Vec2i(320,224), Vec2i(400,224)}) {
+        const Vec2i composed = ClassicScreenLayout::compositionSize(true, source);
+        ScaledScreenRect viewport;
+        viewport.setResolution(composed);
+        viewport.buildRectAspectFit(Recti(0,0,1920,1080));
+        if (source.x == 320) viewport.setRectOnScreen(Recti(240,0,1440,1080));
+        const Recti rect = viewport.getRectOnScreen();
+        assert(rect.width == 1440 && rect.height == 1080);
+        Vec2f center = viewport.getInnerPositionFromScreen(Vec2f(rect.x+rect.width*.5f, rect.y+rect.height*.5f));
+        assert(std::abs(center.x - composed.x*.5f) < .01f);
+        assert(std::abs(center.y - composed.y*.5f) < .01f);
+        if (source.x == 400) {
+            // Fonts retain square pixels; the full-width menu is never compressed.
+            assert(std::abs(float(rect.width)/composed.x - float(rect.height)/composed.y) < .01f);
+            assert(188 * composed.y / 224 + 13 < composed.y); // Mode button remains visible.
+        }
+        const Vec2f point(100, 80);
+        const auto restored = viewport.getInnerPositionFromScreen(viewport.getScreenPositionFromInner(point));
+        assert(std::abs(point.x-restored.x) < .01f && std::abs(point.y-restored.y) < .01f);
+    }
+    std::cout << "Classic tests passed: real save isolation, fixed presets, scroll/object memory boundary, safe 224-line fields, full 4:3 menu canvas and input mapping\n";
 }

@@ -160,6 +160,7 @@ void Game::registerScriptBindings(lemon::Module& module)
 
 	// Game
 	{
+		builder.addNativeFunction("Game.isClassicMode", lemon::wrap(*this, &Game::isClassicMode), defaultFlags);
 		builder.addNativeFunction("Game.getSetting", lemon::wrap(*this, &Game::useSetting), defaultFlags)
 			.setParameters("settingId");
 
@@ -852,7 +853,10 @@ void Game::startIntoGameInternal()
 {
 	// Menus keep their native layout; every game/intro entry chooses a real field size.
 	if (!isInMainMenuMode())
+	{
+		Configuration::instance().mClassicMenuActive = false;
 		VideoOut::instance().setScreenSize(ClassicModeRules::gameSize(Configuration::instance().mClassicMode));
+	}
 	// Setup defaults -- these should not get used outside of Time Attack anyway
 	mLastZoneAndAct = 0;
 	mLastCharacters = 0;
@@ -1083,6 +1087,11 @@ bool Game::isInSkippableCutscene()
 }
 
 
+bool Game::isClassicMode()
+{
+	return Configuration::instance().mClassicMode;
+}
+
 bool Game::setClassicMode(bool enabled)
 {
     Configuration& config = Configuration::instance();
@@ -1108,6 +1117,7 @@ void Game::loadModeProfile()
     Configuration& config = Configuration::instance();
     const std::wstring root = ClassicModeRules::saveRoot(config.mAppDataPath, config.mClassicMode);
     config.mPersistentDataBasePath = root + L"storage/";
+	RMX_LOG_INFO("Mode profile: " << (config.mClassicMode ? "Classic" : "Anniversary") << "; storage: " << WString(config.mPersistentDataBasePath).toStdString());
     config.mSaveStatesDir = config.mClassicMode ? root + L"savestates/" : mAnniversarySaveStatesDir;
     config.mSaveStatesDirLocal = config.mClassicMode ? root + L"savestates/" : mAnniversarySaveStatesDirLocal;
     PersistentData::instance().loadFromBasePath(config.mPersistentDataBasePath);

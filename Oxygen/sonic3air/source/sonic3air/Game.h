@@ -44,6 +44,7 @@ public:
 	void startup(EmulatorInterface& emulatorInterface);
 	void shutdown();
 	bool setClassicMode(bool enabled);
+	bool isClassicMode();
 	void update(float timeElapsed);
 
 	void registerScriptBindings(lemon::Module& module);

@@ -200,6 +200,7 @@ void ExtrasMenu::keyboard(const rmx::KeyboardEvent& ev)
 
 void ExtrasMenu::update(float timeElapsed)
 {
+	mScrolling.setVisibleAreaHeight(std::max(1, mRect.height - 30));
 	GameMenuBase::update(timeElapsed);
 
 	mActiveTabAnimated += clamp((float)mActiveTab - mActiveTabAnimated, -timeElapsed * 4.0f, timeElapsed * 4.0f);

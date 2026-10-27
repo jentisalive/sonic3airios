@@ -1,5 +1,6 @@
 #pragma once
 #include "sonic3air/data/SharedDatabase.h"
+#include "oxygen/helper/ClassicScreenLayout.h"
 
 // Effective settings only: the user's Anniversary preferences remain untouched.
 namespace ClassicModeRules
@@ -23,5 +24,5 @@ namespace ClassicModeRules
     {
         return documents + (classic ? L"classic/" : L"");
     }
-    inline Vec2i gameSize(bool classic) { return classic ? Vec2i(320, 240) : Vec2i(400, 224); }
+    inline Vec2i gameSize(bool classic) { return classic ? Vec2i(ClassicScreenLayout::GAME_WIDTH, ClassicScreenLayout::GAME_HEIGHT) : Vec2i(400, 224); }
 }

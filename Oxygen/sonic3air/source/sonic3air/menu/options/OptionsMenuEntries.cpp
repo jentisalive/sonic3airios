@@ -164,6 +164,9 @@ void OptionsMenuEntry::renderInternal(RenderContext& renderContext_, const Color
 
 	const bool isSelected = renderContext.mIsSelected;
 	const bool isDisabled = !isInteractable();
+	const bool modeLocked = Configuration::instance().mClassicMode &&
+		(mData == option::ROTATION || mData == option::TIME_DISPLAY || mData == option::LIVES_DISPLAY ||
+		 mData == option::SPEEDUP_AFTER_IMAGES || mData == option::FAST_RUN_ANIM || mData == option::ANTI_FLICKER);
 
 	Color color = isSelected ? selectedColor : isDisabled ? Color(0.4f, 0.4f, 0.4f) : normalColor;
 	color.a *= renderContext.mTabAlpha;
@@ -222,7 +225,7 @@ void OptionsMenuEntry::renderInternal(RenderContext& renderContext_, const Color
 		const AudioCollection::AudioDefinition* audioDefinition = nullptr;
 		{
 			static const std::string TEXT_NOT_AVAILABLE = "not available";
-			const std::string* text = (isDisabled && mData != option::RENDERER) ? &TEXT_NOT_AVAILABLE : &mOptions[mSelectedIndex].mText;
+			const std::string* text = (isDisabled && !modeLocked && mData != option::RENDERER) ? &TEXT_NOT_AVAILABLE : &mOptions[mSelectedIndex].mText;
 			if (mData == option::SOUND_TEST)
 			{
 				audioDefinition = renderContext.mOptionsMenu->getSoundTestAudioDefinition(selected().mValue);
