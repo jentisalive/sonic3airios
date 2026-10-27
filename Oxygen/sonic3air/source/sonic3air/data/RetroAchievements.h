@@ -14,7 +14,7 @@ struct Snapshot
     unsigned zoneAct = 0, rings = 0, lives = 0, time = 0, character = 0;
     unsigned chaos = 0, superEmeralds = 0, shield = 0, checkpoint = 0;
     unsigned x = 0, y = 0, cameraY = 0, input = 0, blueRemaining = 0, ringsRemaining = 0;
-    bool transformed = false, active = false, normal = false, competition = false;
+    bool transformed = false, active = false, countersActive = false, normal = false, competition = false;
 };
 
 class Tracker
@@ -74,19 +74,24 @@ public:
             mShieldChanges = 0; mLastShield = s.shield & 0x70;
         }
         if (event == PAUSE) mBackwardsValid = false;
-        if (event == FRAME && s.active)
+        if (event == FRAME && s.countersActive)
         {
-            if (s.input & 4) mNoLeft = false; // Raw player input, including control overrides
-            if (s.transformed) { mNoDamage = false; mDeathless = false; }
+            // Bonus stages can grant rings and extra lives too. Their counters
+            // remain valid, while their coordinates are excluded below.
             if (s.rings >= 100) unlock(RINGS100);
             if (s.rings >= 200) unlock(RINGS200);
-            if (s.zoneAct == 0x0c00 && s.rings >= 100) unlock(DDZ_RINGS);
             if (mHaveLives && s.lives > mLastLives)
             {
                 if (s.lives == 10) unlock(LIVES10);
                 if (s.lives == 20) unlock(LIVES20);
             }
             mLastLives = s.lives; mHaveLives = true;
+        }
+        if (event == FRAME && s.active)
+        {
+            if (s.input & 4) mNoLeft = false; // Raw player input, including control overrides
+            if (s.transformed) { mNoDamage = false; mDeathless = false; }
+            if (s.zoneAct == 0x0c00 && s.rings >= 100) unlock(DDZ_RINGS);
             // World bounds from the original S3&K ring/object placements. Camera
             // comparisons use signed deltas so vertical wrapping cannot award MHZ_TOP.
             if ((s.zoneAct >> 8) == 7 && s.cameraY == 0 && s.y >= 0xffe0) unlock(MHZ_TOP);

@@ -1176,7 +1176,8 @@ void Game::retroEvent(uint32 event, uint32 a, uint32 b)
     s.cameraY = memory.readMemory16(0xffffee7c);
     s.input = memory.readMemory8(0xfffff604);
     s.transformed = memory.readMemory8(0xfffffe19) != 0 || memory.readMemory8(0xfffff667) != 0;
-    s.active = memory.readMemory8(0xfffff600) == 0x0c && memory.readMemory8(0xfffffe48) == 0;
+    s.countersActive = memory.readMemory8(0xfffff600) == 0x0c;
+    s.active = s.countersActive && memory.readMemory8(0xfffffe48) == 0;
     s.blueRemaining = memory.readMemory16(0xffffe438);
     s.ringsRemaining = memory.readMemory16(0xffffe442);
     // Exclude bonus-stage coordinates and counters from regular-act checks.

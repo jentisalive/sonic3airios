@@ -7,7 +7,7 @@ struct Harness {
     Tracker tracker;
     Snapshot s;
     std::set<unsigned> earned;
-    Harness() { s.normal = s.active = true; s.character = 1; s.lives = 3; }
+    Harness() { s.normal = s.active = s.countersActive = true; s.character = 1; s.lives = 3; }
     void event(Event e, unsigned a=0, unsigned b=0) {
         tracker.process(e, s, a, b, [&](unsigned id) { earned.insert(id-ID_BASE); });
     }
@@ -58,6 +58,10 @@ int main() {
         Harness h; h.start(0); h.s.lives=lives; h.event(FRAME); record(h);
     }
     { Harness h; h.s.lives=20; h.start(0); h.event(FRAME); assert(!h.has(LIVES20)); }
+    { Harness h; h.start(0); h.event(BONUS_ENTER); h.s.active=false; h.s.rings=200; h.s.lives=10;
+      h.event(FRAME); assert(h.has(RINGS200) && h.has(LIVES10)); }
+    { Harness h; h.start(0); h.s.active=h.s.countersActive=false; h.s.rings=200; h.s.lives=10;
+      h.event(FRAME); assert(!h.has(RINGS200) && !h.has(LIVES10)); }
     { Harness h; h.start(0x0001); h.event(LIFE_MONITOR,0x1ba8,0x203); record(h); }
     { Harness h; h.start(0x0001); h.event(LIFE_MONITOR,0x1ba8,0x5c0); assert(!h.has(HIDDEN_LIFE)); }
     { Harness h; h.start(0x0100); h.s.x=0x2600; h.s.y=0x340; h.event(FRAME); record(h); }
