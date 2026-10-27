@@ -7,7 +7,9 @@ from pathlib import Path
 app = Path(sys.argv[1])
 with (app / "Info.plist").open("rb") as stream:
     info = plistlib.load(stream)
-assert info["CFBundleShortVersionString"] == "0.1.3"
+assert info["CFBundleShortVersionString"] == "0.1.4"
+assert info["CFBundleIdentifier"] == "org.sonic3air.native-ios.classic43"
+assert info["CFBundleDisplayName"] == "Sonic 3 AIR 4x3"
 assert info["UIDeviceFamily"] == [1, 2]
 assert info["CFBundleSupportedPlatforms"] == ["iPhoneOS"]
 assert info["CFBundleIcons"]["CFBundlePrimaryIcon"]["CFBundleIconFiles"]
@@ -32,3 +34,8 @@ binary = (app / info["CFBundleExecutable"]).read_bytes()
 magic, cpu, subtype, kind = struct.unpack_from("<4I", binary)
 assert magic == 0xFEEDFACF and cpu == 0x0100000C and kind == 2
 print("Verified native arm64 app, source entry point, bundle metadata and iPhone/iPad icons")
+
+import json
+config = json.loads((app / "content/sonic3air/config.json").read_text())
+assert config["GameScreen"] == "320 x 224"
+print("Verified separate 4:3 identity and classic game resolution")

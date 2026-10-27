@@ -196,6 +196,10 @@ void GameApp::render()
 
 void GameApp::onStartGame()
 {
+#if defined(SONIC3AIR_IOS_CLASSIC_ASPECT)
+	// Switch back from the fixed-width native menu to the classic game field.
+	VideoOut::instance().setScreenSize(320, 224);
+#endif
 	mCurrentState = State::INGAME;
 	mRemoveChild = mMenuBackground;
 	mGameView->setFadedIn();
@@ -203,6 +207,10 @@ void GameApp::onStartGame()
 
 void GameApp::openTitleScreen()
 {
+#if defined(SONIC3AIR_IOS_CLASSIC_ASPECT)
+	// Switch back from the fixed-width native menu to the classic game field.
+	VideoOut::instance().setScreenSize(320, 224);
+#endif
 	mRemoveChild = mMenuBackground;
 	mGameView->setFadedIn();
 	gotoPhase(1);

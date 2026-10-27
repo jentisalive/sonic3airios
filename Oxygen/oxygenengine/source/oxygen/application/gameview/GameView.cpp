@@ -22,6 +22,7 @@
 #include "oxygen/helper/Profiling.h"
 #include "oxygen/rendering/parts/RenderParts.h"
 #include "oxygen/rendering/RenderResources.h"
+#include "oxygen/rendering/utils/RenderUtils.h"
 #include "oxygen/resources/FontCollection.h"
 #include "oxygen/resources/ResourcesCache.h"
 #include "oxygen/simulation/CodeExec.h"
@@ -97,6 +98,13 @@ void GameView::updateGameViewport()
 	const Configuration& config = Configuration::instance();
 	const Recti gameScreenRect = VideoOut::instance().getScreenRect();
 	mGameViewport.setResolution(gameScreenRect.getSize());
+
+#if defined(SONIC3AIR_IOS_CLASSIC_ASPECT)
+	// Classic pixels are presented in a 4:3 frame. Keep the source resolution
+	// for input conversion, including the native 400x224 menu layout.
+	mGameViewport.setRectOnScreen(RenderUtils::getLetterBoxRect(mRect, 4.0f / 3.0f));
+	return;
+#endif
 
 	switch (config.mUpscaling)
 	{

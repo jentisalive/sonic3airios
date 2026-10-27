@@ -1,7 +1,7 @@
-name: Native iOS IPA
+name: Native iOS IPA - Classic 4x3
 on:
   push:
-    branches: [main, ios-native]
+    branches: [ios-native-4x3]
     paths:
       - 'Oxygen/**'
       - 'librmx/**'
@@ -53,12 +53,12 @@ jobs:
           mkdir -p ipa/Payload
           cp -R build-ios/Sonic3AIR.app ipa/Payload/
           cd ipa
-          /usr/bin/zip -qry ../Sonic3AIR-iOS-unsigned.ipa Payload
+          /usr/bin/zip -qry ../Sonic3AIR-iOS-4x3-unsigned.ipa Payload
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: Sonic3AIR-iOS-unsigned
-          path: Sonic3AIR-iOS-unsigned.ipa
+          name: Sonic3AIR-iOS-4x3-unsigned
+          path: Sonic3AIR-iOS-4x3-unsigned.ipa
           if-no-files-found: error
       - name: Upload build log
         if: always()
@@ -69,7 +69,7 @@ jobs:
           if-no-files-found: ignore
   release:
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/ios-native'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/ios-native-4x3'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -80,31 +80,31 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
-          name: Sonic3AIR-iOS-unsigned
+          name: Sonic3AIR-iOS-4x3-unsigned
           path: release-files
       - name: Publish experimental iOS release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           SOURCE_SHA: ${{ github.sha }}
-          RELEASE_TAG: ios-v0.1.3
+          RELEASE_TAG: ios-v0.1.4-4x3
         shell: bash
         run: |
           set -euo pipefail
-          ipa_file="release-files/Sonic3AIR-iOS-unsigned.ipa"
+          ipa_file="release-files/Sonic3AIR-iOS-4x3-unsigned.ipa"
           existing_target=$(gh release view "$RELEASE_TAG" --json targetCommitish --jq .targetCommitish 2>/dev/null || true)
           if [ -n "$existing_target" ]; then
             if [ "$existing_target" != "$SOURCE_SHA" ]; then
               echo "This release tag already belongs to another commit. Bump the release version."
               exit 1
             fi
-            has_ipa=$(gh release view "$RELEASE_TAG" --json assets --jq '.assets | any(.name == "Sonic3AIR-iOS-unsigned.ipa")')
+            has_ipa=$(gh release view "$RELEASE_TAG" --json assets --jq '.assets | any(.name == "Sonic3AIR-iOS-4x3-unsigned.ipa")')
             if [ "$has_ipa" != "true" ]; then
               gh release upload "$RELEASE_TAG" "$ipa_file"
             fi
           else
             gh release create "$RELEASE_TAG" "$ipa_file" \
               --target "$SOURCE_SHA" --prerelease \
-              --title "Sonic 3 A.I.R. iOS 0.1.3 (experimental)" \
+              --title "Sonic 3 A.I.R. for iOS · v0.1.4 · Classic 4:3 (Experimental)" \
               --notes-file Oxygen/sonic3air/build/_ios/RELEASE_NOTES.md
           fi

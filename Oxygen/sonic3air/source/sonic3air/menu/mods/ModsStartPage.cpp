@@ -105,7 +105,7 @@ void ModsStartPage::render(Drawer& drawer, float visibility)
 #if defined(PLATFORM_IOS)
 	drawer.printText(global::mOxyfontSmall, rect, "Copy extracted mod folders into Documents/mods.", 1, color);
 	rect.y += 14;
-	drawer.printText(global::mOxyfontSmall, rect, "In Files: On My iPhone / iPad > Sonic 3 AIR > mods", 1, color);
+	drawer.printText(global::mOxyfontSmall, rect, "Files > Sonic 3 AIR 4x3 > mods", 1, color);
 #else
 	drawer.printText(global::mOxyfontSmall, rect, "Have a look at the game manual PDF for instructions", 1, color);
 	rect.y += 14;

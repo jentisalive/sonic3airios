@@ -17,6 +17,13 @@ An experimental native port of Sonic 3 A.I.R., powered by the Oxygen Engine, SDL
 
 </div>
 
+> **Classic 4:3 edition** — this branch builds a separate app named **Sonic 3 AIR 4x3**. Gameplay uses 320 × 224 with 4:3 presentation and centered black bars on wide screens. Menus keep their full layout, scaled into the 4:3 frame. The app has separate Documents, saves, mods and ROM import.
+>
+> **[Download Classic 4:3](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.1.4-4x3)** · **[4:3 build notes](Oxygen/sonic3air/build/_ios/README.md)**
+>
+> The widescreen edition remains available separately. The information below describes that original edition.
+
+
 ---
 
 ## A native adventure
