@@ -72,9 +72,9 @@ int main(int argc, char** argv)
         assert(ClassicScreenLayout::constrain(true, requested).y == 224);
         assert(ClassicScreenLayout::constrain(false, requested) == requested);
     }
-    assert(ClassicScreenLayout::compositionSize(true, Vec2i(400,224)) == Vec2i(400,300));
+    assert(ClassicScreenLayout::compositionSize(true, Vec2i(400,224)) == Vec2i(320,224));
     assert(ClassicScreenLayout::compositionSize(true, Vec2i(320,224)) == Vec2i(320,224));
-    assert(ClassicScreenLayout::compositionSize(true, Vec2i(320,224), true) == Vec2i(400,300));
+    assert(ClassicScreenLayout::compositionSize(true, Vec2i(320,224), true) == Vec2i(320,224));
 
     // Every Classic screen has the same physical 4:3 frame, including menus.
     for (Vec2i source : {Vec2i(320,224), Vec2i(400,224)}) {
@@ -82,20 +82,21 @@ int main(int argc, char** argv)
         ScaledScreenRect viewport;
         viewport.setResolution(composed);
         viewport.buildRectAspectFit(Recti(0,0,1920,1080));
-        if (source.x == 320) viewport.setRectOnScreen(Recti(240,0,1440,1080));
+        viewport.setRectOnScreen(Recti(240,0,1440,1080));
         const Recti rect = viewport.getRectOnScreen();
         assert(rect.width == 1440 && rect.height == 1080);
         Vec2f center = viewport.getInnerPositionFromScreen(Vec2f(rect.x+rect.width*.5f, rect.y+rect.height*.5f));
         assert(std::abs(center.x - composed.x*.5f) < .01f);
         assert(std::abs(center.y - composed.y*.5f) < .01f);
         if (source.x == 400) {
-            // Fonts retain square pixels; the full-width menu is never compressed.
-            assert(std::abs(float(rect.width)/composed.x - float(rect.height)/composed.y) < .01f);
-            assert(188 * composed.y / 224 + 13 < composed.y); // Mode button remains visible.
+            assert(ClassicScreenLayout::menuLeftShift(true) == 80);
+            assert(ClassicScreenLayout::menuLeftShift(false) == 0);
+            assert(218 - ClassicScreenLayout::menuLeftShift(true) == 138);
+            assert(188 + 13 < composed.y); // Original row spacing and visible mode toggle.
         }
         const Vec2f point(100, 80);
         const auto restored = viewport.getInnerPositionFromScreen(viewport.getScreenPositionFromInner(point));
         assert(std::abs(point.x-restored.x) < .01f && std::abs(point.y-restored.y) < .01f);
     }
-    std::cout << "Classic tests passed: real save isolation, fixed presets, scroll/object memory boundary, safe 224-line fields, full 4:3 menu canvas and input mapping\n";
+    std::cout << "Classic tests passed: real save isolation, fixed presets, scroll/object memory boundary, safe 224-line fields, compact 224-line menus and input mapping\n";
 }

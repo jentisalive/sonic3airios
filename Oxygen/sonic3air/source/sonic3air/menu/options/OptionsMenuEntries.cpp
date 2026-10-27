@@ -160,7 +160,7 @@ void OptionsMenuEntry::renderInternal(RenderContext& renderContext_, const Color
 	Drawer& drawer = *renderContext.mDrawer;
 	const int baseX = renderContext.mCurrentPosition.x;
 	int& py = renderContext.mCurrentPosition.y;
-	Font& font = (mUseSmallFont || renderContext.mIsModsTab) ? global::mOxyfontSmall : global::mOxyfontRegular;
+	Font& font = (mUseSmallFont || renderContext.mIsModsTab || Configuration::instance().mClassicMode) ? global::mOxyfontSmall : global::mOxyfontRegular;
 
 	const bool isSelected = renderContext.mIsSelected;
 	const bool isDisabled = !isInteractable();
@@ -207,8 +207,8 @@ void OptionsMenuEntry::renderInternal(RenderContext& renderContext_, const Color
 		const bool canGoLeft  = !isDisabled && (mSelectedIndex > 0);
 		const bool canGoRight = !isDisabled && (mSelectedIndex < mOptions.size() - 1);
 
-		const int center = mText.empty() ? baseX : (baseX + 88);
-		int arrowDistance = 75;
+		const int center = mText.empty() ? baseX : (baseX + (Configuration::instance().mClassicMode ? 68 : 88));
+		int arrowDistance = Configuration::instance().mClassicMode ? 65 : 75;
 		if (isSelected)
 		{
 			const int offset = (int)std::fmod(FTX::getTime() * 6.0f, 6.0f);
@@ -218,7 +218,7 @@ void OptionsMenuEntry::renderInternal(RenderContext& renderContext_, const Color
 		// Description
 		if (!mText.empty())
 		{
-			drawer.printText(font, Recti(baseX - 40, py, 0, 10), mText, 6, color);
+			drawer.printText(font, Recti(baseX - (Configuration::instance().mClassicMode ? 30 : 40), py, 0, 10), mText, 6, color);
 		}
 
 		// Value text

@@ -808,7 +808,7 @@ void OptionsMenu::render()
 	renderContext.mDeltaSeconds = std::min(mDeltaSecondsForRendering, 0.1f);
 	mDeltaSecondsForRendering = 0.0f;
 
-	int anchorX = 200;
+	int anchorX = mRect.width / 2;
 	int anchorY = 0;
 	float alpha = 1.0f;
 	if (mState != State::SHOW && mState != State::FADE_TO_GAME)

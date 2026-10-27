@@ -351,7 +351,8 @@ void ExtrasMenu::render()
 
 	Drawer& drawer = EngineMain::instance().getDrawer();
 
-	int anchorX = 200;
+	int anchorX = mRect.width / 2;
+	const int cardHalfWidth = std::min(185, (mRect.width - 24) / 2);
 	float alpha = 1.0f;
 	if (mState != State::SHOW && mState != State::FADE_TO_GAME)
 	{
@@ -420,15 +421,15 @@ void ExtrasMenu::render()
 				// Background
 				DrawerTexture& frameTexture = global::mAchievementsFrame;
 				DrawerTexture& secretImage = global::mSecretImage[secret->mType];
-				drawer.drawRect(Recti(px - 185, py, frameTexture.getWidth(), frameTexture.getHeight()), frameTexture, Color(1.0f, 1.0f, 1.0f, tabAlpha * 0.5f));
-				drawer.drawRect(Recti(px - 185, py, secretImage.getWidth() + 4, secretImage.getHeight() + 4), secretImage, Color(0.12f, 0.12f, 0.12f, tabAlpha));
-				drawer.drawRect(Recti(px - 183, py + 2, secretImage.getWidth(), secretImage.getHeight()), secretImage, Color(1.0f, 1.0f, 1.0f, tabAlpha));
+				drawer.drawRect(Recti(px - cardHalfWidth, py, std::min((int)frameTexture.getWidth(), mRect.width - 24), frameTexture.getHeight()), frameTexture, Color(1.0f, 1.0f, 1.0f, tabAlpha * 0.5f));
+				drawer.drawRect(Recti(px - cardHalfWidth, py, secretImage.getWidth() + 4, secretImage.getHeight() + 4), secretImage, Color(0.12f, 0.12f, 0.12f, tabAlpha));
+				drawer.drawRect(Recti(px - cardHalfWidth + 2, py + 2, secretImage.getWidth(), secretImage.getHeight()), secretImage, Color(1.0f, 1.0f, 1.0f, tabAlpha));
 				py += 7;
 
 				// Title
 				String name(secret->mName);
 				name.upperCase();
-				drawer.printText(global::mSonicFontC, Recti(px - 103, py + 12, 0, 10), name, 1, color);
+				drawer.printText(global::mSonicFontC, Recti(px - cardHalfWidth + 82, py + 12, 0, 10), name, 1, color);
 
 				py = localStartY + 56;
 				if (isSelected)
@@ -459,14 +460,14 @@ void ExtrasMenu::render()
 				// Background
 				DrawerTexture& frameTexture = global::mAchievementsFrame;
 				DrawerTexture& secretImage = isUnlocked ? global::mSecretImage[secret->mType] : global::mSecretImage[secret->mType | 0x80000000];
-				drawer.drawRect(Recti(px - 185, py, frameTexture.getWidth(), frameTexture.getHeight()), frameTexture, Color(1.0f, 1.0f, 1.0f, tabAlpha));
-				drawer.drawRect(Recti(px - 183, py + 2, secretImage.getWidth(), secretImage.getHeight()), secretImage, Color(1.0f, 1.0f, 1.0f, tabAlpha));
+				drawer.drawRect(Recti(px - cardHalfWidth, py, std::min((int)frameTexture.getWidth(), mRect.width - 24), frameTexture.getHeight()), frameTexture, Color(1.0f, 1.0f, 1.0f, tabAlpha));
+				drawer.drawRect(Recti(px - cardHalfWidth + 2, py + 2, secretImage.getWidth(), secretImage.getHeight()), secretImage, Color(1.0f, 1.0f, 1.0f, tabAlpha));
 				py += 7;
 
 				// Title
 				String name(isUnlocked ? secret->mName : "???");
 				name.upperCase();
-				drawer.printText(global::mOxyfontRegular, Recti(px - 110, py, 0, 10), name, 1, color);
+				drawer.printText(global::mOxyfontRegular, Recti(px - cardHalfWidth + 75, py, 0, 10), name, 1, color);
 
 				// Description
 				const Color color2 = isSelected ? Color(1.0f, 1.0f, 0.6f, tabAlpha) : Color(0.9f, 0.9f, 0.9f, tabAlpha);
@@ -534,14 +535,14 @@ void ExtrasMenu::render()
 				// Background
 				DrawerTexture& frameTexture = global::mAchievementsFrame;
 				DrawerTexture& achievementImage = global::mAchievementImage[achievement->mType | ((isSelected || isComplete) ? 0 : 0x80000000)];
-				drawer.drawRect(Recti(px - 185, py, frameTexture.getWidth(), frameTexture.getHeight()), frameTexture, Color(1.0f, 1.0f, 1.0f, tabAlpha));
-				drawer.drawRect(Recti(px - 183, py + 2, achievementImage.getWidth(), achievementImage.getHeight()), achievementImage, Color(1.0f, 1.0f, 1.0f, tabAlpha));
+				drawer.drawRect(Recti(px - cardHalfWidth, py, std::min((int)frameTexture.getWidth(), mRect.width - 24), frameTexture.getHeight()), frameTexture, Color(1.0f, 1.0f, 1.0f, tabAlpha));
+				drawer.drawRect(Recti(px - cardHalfWidth + 2, py + 2, achievementImage.getWidth(), achievementImage.getHeight()), achievementImage, Color(1.0f, 1.0f, 1.0f, tabAlpha));
 				py += 7;
 
 				// Title
 				String name(achievement->mName);
 				name.upperCase();
-				drawer.printText(global::mOxyfontRegular, Recti(px - 110, py, 0, 10), name, 1, color);
+				drawer.printText(global::mOxyfontRegular, Recti(px - cardHalfWidth + 75, py, 0, 10), name, 1, color);
 
 				// Description
 				{

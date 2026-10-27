@@ -102,7 +102,7 @@ void GameView::updateGameViewport()
 
 	if (config.mClassicMode)
 	{
-		// Genesis-style pixel aspect for 320x224; square pixels for the 400x300 UI.
+		// The game and compact native menus share the original 320x224 field.
 		mGameViewport.setRectOnScreen(RenderUtils::getLetterBoxRect(mRect, 4.0f / 3.0f));
 		return;
 	}

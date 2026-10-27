@@ -1,40 +1,29 @@
 <div align="center">
 
-## Sonic 3 A.I.R. for iOS · v0.2.2
+## Sonic 3 A.I.R. for iOS · v0.2.3
 
-**Classic Mode: memory safety & complete 4:3 menus**
+**Original menu spacing, shifted left for Classic Mode**
 
-[Download unsigned IPA](https://github.com/jentisalive/sonic3airios/releases/download/ios-v0.2.2/Sonic3AIR-iOS-unsigned.ipa)
+[Download unsigned IPA](https://github.com/jentisalive/sonic3airios/releases/download/ios-v0.2.3/Sonic3AIR-iOS-unsigned.ipa)
 
 </div>
 
-### Fixed zone crashes
+### Classic menu layout
 
-Version 0.2.0 incorrectly used a 240-line game field. The original horizontal-scroll buffer has room for **224 lines**, ending at `0xffffe37f`; the dynamic-object list starts immediately afterward at `0xffffe380`. Extra scroll writes could corrupt that list while moving through AIZ and other zones.
+- Removed the taller 400 × 300 menu canvas. Classic gameplay and menus now share the original **320 × 224** field with 4:3 output.
+- Restored the original main-menu row positions and moved the entries **80 pixels left**. Classic Mode / Anniversary Mode remains below Mods.
+- Moved submenu column centers, controls and footers inward for the narrower field. Options use the compact font so labels and values fit.
+- Retained the original background style and adjusted the left panel and logo to fit without cropping the menu text.
 
-- Restored the supported **320 × 224** Classic simulation field.
-- Constrained Classic resolution changes at the video and script interfaces.
-- Bounded the native scroll writer to the real buffer size as an additional safeguard.
-- Removed the additional gameplay area at the bottom of the screen. Intro and gameplay use the original 224-line field with Genesis-style pixel-aspect correction for 4:3 display.
+### Safety and progress
 
-### Full 4:3 menus
+The scroll-buffer overflow fix is retained: Classic stays at **224 scanlines**, so the dynamic-object list is not overwritten. There are no extra gameplay rows at the bottom. The **30 FPS** presentation cap, fixed Classic preferences, separate saves and Anniversary preferences are preserved.
 
-- Native menus now render into a separate **400 × 300 presentation canvas**, with square-pixel text and UI. The simulation remains 224 lines high.
-- Reflowed the main-menu rows, scrolling areas, backgrounds and footer positions for the taller menu layout.
-- All menu screens use a centered 4:3 output frame. They are not cropped from a narrow framebuffer or horizontally squeezed from a wide menu.
-- The animated decorative backdrop fills the canvas; its logo is rendered separately to preserve its proportions.
-- Returning from in-game Options explicitly restores the gameplay canvas.
-- Locked Classic options show their actual preset values instead of “not available”.
+### Install & testing
 
-### Preserved
+Install **Sonic3AIR-iOS-unsigned.ipa** over the regular Sonic 3 AIR app, keeping Documents. Your compatible Sonic 3 & Knuckles ROM is required and is not included.
 
-**Classic Mode / Anniversary Mode** remains below Mods. Switching returns to the intro/title screen. Classic retains its 30 FPS presentation cap, normal-speed 60 Hz logic, fixed visual settings and separate progress under **Documents/classic/**. Anniversary preferences and saves remain in their existing locations. Both modes share ROM and mods.
-
-### Install & validation
-
-Install **Sonic3AIR-iOS-unsigned.ipa** over the regular Sonic 3 AIR app, preserving Documents. Your compatible Sonic 3 & Knuckles ROM is required and is not included.
-
-Regression tests exercise the scroll-buffer boundary, oversized resolution requests, the independent save profiles, 4:3 menu geometry and input mapping. CI compiles the arm64 iOS app and checks the bundle. A physical-device replay of the affected AIZ section, other zones and menu transitions is still needed.
+Checks cover save-profile isolation, the scroll/object memory boundary, 224-line screen limits, coordinate mapping and main-menu/Options font bounds using the actual font metadata. CI builds the native arm64 app and verifies its bundle. The compact layout and the affected AIZ section still need verification on a device.
 
 [Source](https://github.com/jentisalive/sonic3airios/tree/ios-native) · [Original project](https://sonic3air.org/)
 

@@ -528,7 +528,7 @@ void ModsMenu::update(float timeElapsed)
 			ModEntry& modEntry = mModEntries[menuEntries.selected().mData];
 			if (mInfoOverlay.mShownMod != modEntry.mMod)
 			{
-				global::mOxyfontTinySimple.wordWrapText(mInfoOverlay.mDescriptionLines, 290, modEntry.mMod->mDescription);
+				global::mOxyfontTinySimple.wordWrapText(mInfoOverlay.mDescriptionLines, Configuration::instance().mClassicMode ? 210 : 290, modEntry.mMod->mDescription);
 				mInfoOverlay.mShownMod = modEntry.mMod;
 			}
 		}
@@ -605,12 +605,13 @@ void ModsMenu::render()
 	if (mInfoOverlay.mVisibility > 0.0f)
 	{
 		infoOverlayPosition -= getInfoOverlayHeight();
-		drawer.pushScissor(Recti(0, 0, 400, infoOverlayPosition));
+		drawer.pushScissor(Recti(0, 0, mRect.width, infoOverlayPosition));
 	}
 
 	const int minTabIndex = 0;
 	const int maxTabIndex = 1;
-	const int rightTabStart = roundToInt(interpolate(260.0f, 140.0f, mActiveTabAnimated));
+	const bool compact = Configuration::instance().mClassicMode;
+	const int rightTabStart = roundToInt(interpolate(compact ? 280.0f : 260.0f, compact ? 20.0f : 140.0f, mActiveTabAnimated));
 
 	for (size_t tabIndex = minTabIndex; tabIndex <= maxTabIndex; ++tabIndex)
 	{
@@ -630,7 +631,7 @@ void ModsMenu::render()
 		}
 		else
 		{
-			drawer.pushScissor(Recti(rightTabStart + globalOffsetX, 0, 400, mRect.height));
+			drawer.pushScissor(Recti(rightTabStart + globalOffsetX, 0, mRect.width, mRect.height));
 		}
 
 		{
@@ -736,7 +737,7 @@ void ModsMenu::render()
 	{
 		drawer.popScissor();
 
-		Recti rect(globalOffsetX, infoOverlayPosition, 400, mRect.height - infoOverlayPosition);
+		Recti rect(globalOffsetX, infoOverlayPosition, mRect.width, mRect.height - infoOverlayPosition);
 		drawer.drawRect(rect, Color(0.0f, 0.0f, 0.0f, mVisibility * 0.9f));
 		drawer.drawRect(Recti(rect.x, rect.y - 1, rect.width, 1), Color(1.0f, 1.0f, 1.0f, mVisibility));
 
@@ -809,7 +810,7 @@ void ModsMenu::render()
 	// "Applying changes" box
 	if (mApplyingChangesFrameCounter > 0)
 	{
-		Recti rect(100, 94, 200, 35);
+		Recti rect(mRect.width / 2 - 100, 94, 200, 35);
 		DrawerHelper::drawBorderedRect(drawer, rect, 1, Color(1.0f, 1.0f, 1.0f, 0.95f), Color(0.2f, 0.2f, 0.2f, 0.9f));
 		drawer.printText(global::mOxyfontRegular, rect, "Applying changes...", 5);
 	}

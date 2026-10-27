@@ -39,3 +39,5 @@ base_sources=("$repo_root"/librmx/source/rmxbase/**/*.cpp)
   "$repo_root/Oxygen/lemonscript/source/lemon/utility/FlyweightString.cpp" \
   "${base_sources[@]}" -lz -Wl,--gc-sections -o "$test_build_dir/classic_profile_test"
 "$test_build_dir/classic_profile_test" "$test_build_dir/profiles"
+
+python3 "$repo_root/Oxygen/sonic3air/build/_ios/tests/compact_menu_test.py" "$repo_root"
