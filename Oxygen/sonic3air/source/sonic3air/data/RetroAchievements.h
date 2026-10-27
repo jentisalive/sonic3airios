@@ -107,6 +107,7 @@ public:
                     case 5: unlock(ICZ); break; case 6: unlock(LBZ); break;
                     case 7: unlock(MHZ); break; case 4: unlock(FBZ); break;
                     case 8: unlock(SOZ); break;
+                    case 11: unlock(DEZ); break;
                     case 9: if ((s.character == 3 || s.character == 4)) unlock(LRZ); break;
                     default: break;
                 }

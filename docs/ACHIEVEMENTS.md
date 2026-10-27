@@ -74,7 +74,7 @@ These are local unlocks: no login, account sync, official points, hardcore verif
 
 ## Adaptation details
 
-Act results are sampled before the result tally changes the player's rings or score. Sonic/Tails Lava Reef completion is checked after its separate boss segment; Knuckles uses his own Act 2 result. Hidden Palace uses the Knuckles boss defeat event. Character endings use the existing AIR ending event. Special-stage Perfect is checked when the emerald is actually collected.
+Act results are sampled before the result tally changes the player's rings or score. Sonic/Tails Lava Reef completion is checked after its separate boss segment; Knuckles uses his own Act 2 result. Hidden Palace uses the Knuckles boss defeat event. Sky Sanctuary and Death Egg also use their outgoing zone transitions, so they do not depend on showing a result screen or surviving Doomsday. Character endings use the existing AIR ending event. Special-stage Perfect is checked when the emerald is actually collected.
 
 The backwards challenge allows the starting approach before the first collection, then requires backwards movement; moving forward after collection / reversing or opening pause cancels it. It is limited to the first Sonic 3 special stage. Generated Blue Sphere stages and the standalone Blue Sphere extra are excluded by eligibility.
 

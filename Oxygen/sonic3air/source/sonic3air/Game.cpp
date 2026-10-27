@@ -1011,6 +1011,13 @@ void Game::onZoneActCompleted(uint16 zoneAndAct)
 
 uint16 Game::onTriggerNextZone(uint16 zoneAndAct)
 {
+	// These exits do not always create a normal level-results object.
+	const uint16 currentAct = mEmulatorInterface->readMemory16(0xffffee4e);
+	const uint16 physicalAct = mEmulatorInterface->readMemory16(0xfffffe10);
+	if (currentAct == 0x0a00 && zoneAndAct == 0x0b00)
+		retroEvent(retroachievements::ACT_FINISH, 0x0a00, 0);
+	if ((physicalAct == 0x1700 || currentAct == 0x0b01) && (zoneAndAct == 0x0c00 || zoneAndAct == 0x0d01))
+		retroEvent(retroachievements::ACT_FINISH, 0x0b01, 0);
 	return zoneAndAct;
 }
 

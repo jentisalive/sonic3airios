@@ -21,6 +21,7 @@ int main() {
     for (unsigned act : {0x0001,0x0101,0x0201,0x0301,0x0501,0x0601,0x0701,0x0401,0x0801,0x1600,0x0a00}) {
         Harness h; h.s.shield=0x20; h.event(ACT_FINISH,act); record(h);
     }
+    { Harness h; h.event(ACT_FINISH,0x0b01); assert(h.has(DEZ)); record(h); }
     for (unsigned c : {0,1,2,3,4}) {
         Harness h; h.s.character=c; h.s.superEmeralds=7; h.event(GAME_FINISH); record(h);
         if (c==2) assert(h.has(TAILS_END) && !h.has(SONIC_END));
