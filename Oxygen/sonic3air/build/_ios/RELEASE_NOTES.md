@@ -1,10 +1,10 @@
 <div align="center">
 
-## Sonic 3 A.I.R. for iOS · v0.2.1
+## Sonic 3 A.I.R. for iOS · v0.2.2
 
 **Classic Mode: memory safety & complete 4:3 menus**
 
-[Download unsigned IPA](https://github.com/jentisalive/sonic3airios/releases/download/ios-v0.2.1/Sonic3AIR-iOS-unsigned.ipa)
+[Download unsigned IPA](https://github.com/jentisalive/sonic3airios/releases/download/ios-v0.2.2/Sonic3AIR-iOS-unsigned.ipa)
 
 </div>
 
@@ -23,6 +23,7 @@ Version 0.2.0 incorrectly used a 240-line game field. The original horizontal-sc
 - Reflowed the main-menu rows, scrolling areas, backgrounds and footer positions for the taller menu layout.
 - All menu screens use a centered 4:3 output frame. They are not cropped from a narrow framebuffer or horizontally squeezed from a wide menu.
 - The animated decorative backdrop fills the canvas; its logo is rendered separately to preserve its proportions.
+- Returning from in-game Options explicitly restores the gameplay canvas.
 - Locked Classic options show their actual preset values instead of “not available”.
 
 ### Preserved

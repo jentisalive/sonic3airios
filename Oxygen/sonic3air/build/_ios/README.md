@@ -10,7 +10,7 @@ The Retina change still needs device testing; not all features/mods are verified
 ## Download
 
 The regular app now includes **Classic Mode / Anniversary Mode** under **Mods**.
-Download the unsigned IPA from [v0.2.1](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.1).
+Download the unsigned IPA from [v0.2.2](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.2).
 
 Classic Mode uses 320 × 224 gameplay with Genesis-style pixel-aspect correction for 4:3 and a 30 FPS presentation
 cap with 60 Hz logic. Native menus use a separate 400 × 300 square-pixel presentation canvas. Its progress,

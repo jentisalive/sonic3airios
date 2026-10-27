@@ -87,7 +87,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           SOURCE_SHA: ${{ github.sha }}
-          RELEASE_TAG: ios-v0.2.1
+          RELEASE_TAG: ios-v0.2.2
         shell: bash
         run: |
           set -euo pipefail
@@ -105,6 +105,6 @@ jobs:
           else
             gh release create "$RELEASE_TAG" "$ipa_file" \
               --target "$SOURCE_SHA" --prerelease \
-              --title "Sonic 3 A.I.R. iOS 0.2.1 (experimental)" \
+              --title "Sonic 3 A.I.R. iOS 0.2.2 (experimental)" \
               --notes-file Oxygen/sonic3air/build/_ios/RELEASE_NOTES.md
           fi
