@@ -33,6 +33,7 @@ base_sources=("$repo_root"/librmx/source/rmxbase/**/*.cpp)
   -I "$repo_root/framework/external/ogg-vorbis/libvorbis/include" \
   -I "$repo_root/framework/external/zlib/zlib/contrib/minizip" \
   "$repo_root/Oxygen/sonic3air/build/_ios/tests/classic_profile_test.cpp" \
+  "$repo_root/Oxygen/sonic3air/source/sonic3air/data/PlayerProgress.cpp" \
   "$repo_root/Oxygen/oxygenengine/source/oxygen/simulation/PersistentData.cpp" \
   "$repo_root/Oxygen/oxygenengine/source/oxygen/helper/ScaledScreenRect.cpp" \
   "$repo_root/Oxygen/oxygenengine/source/oxygen/rendering/utils/RenderUtils.cpp" \
@@ -41,3 +42,8 @@ base_sources=("$repo_root"/librmx/source/rmxbase/**/*.cpp)
 "$test_build_dir/classic_profile_test" "$test_build_dir/profiles"
 
 python3 "$repo_root/Oxygen/sonic3air/build/_ios/tests/compact_menu_test.py" "$repo_root"
+
+"${CXX:-c++}" -std=c++17 -I "$repo_root/Oxygen/sonic3air/source" \
+  "$repo_root/Oxygen/sonic3air/build/_ios/tests/retro_achievements_test.cpp" \
+  -o "$test_build_dir/retro_achievements_test"
+"$test_build_dir/retro_achievements_test"

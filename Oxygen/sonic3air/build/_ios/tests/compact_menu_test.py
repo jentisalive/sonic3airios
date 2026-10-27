@@ -21,3 +21,11 @@ for text in ['Character Rotation:','Time Display:','Lives Display:','Speed Shoes
 for text in ['Original','Mobile','None (Original)','As Original']:
     assert width(small,text) <= 160, text
 print('Compact menu font bounds passed: main entries, edition toggle and locked preset columns')
+
+# Imported titles use actual glyph metrics, including Classic's narrow cards.
+catalog = (root / 'Oxygen/sonic3air/source/sonic3air/data/RetroAchievementCatalog.h').read_text()
+for line in catalog.splitlines():
+    if line.startswith('\t{'):
+        name = json.loads('[' + line.strip()[1:-2] + ']')[0].upper()
+        assert width(regular, name) <= 206, name
+print('All 53 imported achievement titles fit Classic cards')

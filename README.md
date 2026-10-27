@@ -13,7 +13,7 @@ An experimental native port of Sonic 3 A.I.R., powered by the Oxygen Engine, SDL
 ![Status](https://img.shields.io/badge/status-experimental-F5A623?style=flat-square)
 [![License](https://img.shields.io/badge/license-GPL--3.0-2EA44F?style=flat-square)](LICENSE)
 
-**[Download v0.2.3](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.3)** · **[All releases](https://github.com/jentisalive/sonic3airios/releases)** · **[Build guide](Oxygen/sonic3air/build/_ios/README.md)** · **[Original project](https://sonic3air.org/)**
+**[Download v0.2.4](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.4)** · **[All releases](https://github.com/jentisalive/sonic3airios/releases)** · **[Build guide](Oxygen/sonic3air/build/_ios/README.md)** · **[Original project](https://sonic3air.org/)**
 
 </div>
 
@@ -40,7 +40,7 @@ This port runs the game's C++ engine and LemonScript interpreter directly on iOS
 | Installation | Your compatible signing and sideloading method |
 | Game data | Your own compatible Sonic 3 & Knuckles ROM |
 
-1. Download the **[v0.1.3 IPA](https://github.com/jentisalive/sonic3airios/releases/download/ios-v0.2.3/Sonic3AIR-iOS-unsigned.ipa)**.
+1. Download the **[v0.2.4 IPA](https://github.com/jentisalive/sonic3airios/releases/download/ios-v0.2.4/Sonic3AIR-iOS-unsigned.ipa)**.
 2. Sign and install the app using your usual method.
 3. Launch **Sonic 3 AIR**, tap **Choose ROM…**, and select your ROM in Files.
 4. Let the game prepare its scripts on the first launch, then play.
@@ -77,6 +77,7 @@ When no mods are installed, **Open mods folder** opens the native Files picker w
 
 | Version | Highlights | Download |
 | :--- | :--- | :--- |
+| **0.2.4** | 53 offline achievements adapted from the RetroAchievements Sonic 3 & Knuckles set | [Release](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.4) |
 | **0.2.3** | Compact Classic menu layout with original row spacing; scanline safety fix retained | [Release](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.3) |
 | **0.2.0** | Integrated Classic/Anniversary switch, independent saves, 4:3 and 30 FPS | [Release](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.0) |
 | **0.1.3** | English mod instructions and native mods-folder access | [Release](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.1.3) |
@@ -122,3 +123,13 @@ If something goes wrong, keep `logfile.txt` from the app's Documents folder. Inc
 The project is distributed under **[GNU GPL v3](LICENSE)**. See the original license files for third-party components.
 
 Sonic 3 A.I.R. is a non-profit fan game and is not affiliated with SEGA or Sonic Team. Sonic the Hedgehog and related characters, names, art and music belong to SEGA and their respective rights holders. No financial gain is made from this project. Any commercial use without SEGA's explicit consent is strictly prohibited. The [original project disclaimer](docs/UPSTREAM.md#disclaimer) is preserved with the upstream documentation.
+
+### More achievements
+
+**53 additional local challenges** from the [RetroAchievements Sonic 3 & Knuckles set](https://retroachievements.org/game/4874) join the original 18 AIR achievements under **Extras → Achievements**. Unlocks appear during play and persist in the current edition's save profile. English descriptions explain each challenge; point values are local reference values.
+
+This is an offline adaptation to AIR's native game events, with no RetroAchievements login, online points, leaderboard submission or account synchronization. The original set was designed by **Totaya, blazethecat and RetroAchievements contributors**. The port uses AIR's existing artwork and rewritten descriptions.
+
+Imported challenges are earned in **Normal Game**, with race challenges in **Competition Mode**. AIR Act Select and AIR Time Attack do not award them. Level Select / Debug unlocks *Pulling a Fast One?* and blocks other imported achievements until you return to the main menu and begin another session. Loading a save state cancels ongoing restricted challenges. These local rules do not run the website's emulator trigger definitions.
+
+See the [implementation and device checklist](docs/ACHIEVEMENTS.md) for the complete native event mapping.

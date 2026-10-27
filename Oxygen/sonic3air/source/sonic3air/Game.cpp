@@ -178,6 +178,7 @@ void Game::registerScriptBindings(lemon::Module& module)
 		builder.addNativeFunction("Game.allowRestartInGamePause", lemon::wrap(*this, &Game::allowRestartInGamePause), defaultFlags)
 			.setParameters("canRestart");
 
+		builder.addNativeFunction("Game.retroEvent", lemon::wrap(*this, &Game::retroEvent), defaultFlags);
 		builder.addNativeFunction("Game.onLevelStart", lemon::wrap(*this, &Game::onLevelStart), defaultFlags);
 
 		builder.addNativeFunction("Game.onZoneActCompleted", lemon::wrap(*this, &Game::onZoneActCompleted), defaultFlags)
@@ -313,7 +314,7 @@ void Game::checkForUnlockedSecrets(bool saveIfAnyUnlocked)
 	uint32 achievementsCompleted = 0;
 	for (const SharedDatabase::Achievement& achievement : SharedDatabase::getAchievements())
 	{
-		if (mPlayerProgress.mAchievements.getAchievementState(achievement.mType) > 0)
+		if (achievement.mType < retroachievements::ID_BASE && mPlayerProgress.mAchievements.getAchievementState(achievement.mType) > 0)
 		{
 			++achievementsCompleted;
 		}
@@ -464,6 +465,7 @@ void Game::startIntoLevelSelect()
 	simulation.resetIntoGame("EntryFunctions.levelSelect");
 
 	startIntoGameInternal();
+	retroEvent(retroachievements::CHEAT_EVENT, 0, 0);
 }
 
 void Game::startIntoMainMenuBG()
@@ -540,6 +542,15 @@ void Game::onPostUpdateFrame()
 				GameApp::instance().showSkippableCutsceneWindow(false);
 			}
 		}
+	}
+
+	// Run after every simulation frame, independently of the 30 FPS presentation cap.
+	if (mMode == Mode::NORMAL_GAME || mMode == Mode::COMPETITION)
+	{
+		const uint8 gameMode = emulatorInterface.readMemory8(0xfffff600) & 0x7f;
+		if (getSetting(SharedDatabase::Setting::SETTING_DEBUG_MODE, true) != 0 || gameMode == 0x1c)
+			retroEvent(retroachievements::CHEAT_EVENT, 0, 0);
+		retroEvent(retroachievements::FRAME, 0, 0);
 	}
 
 	// Update player recorder
@@ -851,6 +862,7 @@ void Game::checkActiveModsUsedFeatures()
 
 void Game::startIntoGameInternal()
 {
+	mRetroAchievements = {};
 	// Menus keep their native layout; every game/intro entry chooses a real field size.
 	if (!isInMainMenuMode())
 	{
@@ -917,9 +929,15 @@ bool Game::isAchievementComplete(uint32 achievementId)
 
 void Game::setAchievementComplete(uint32 achievementId)
 {
+	if (achievementId == SharedDatabase::Achievement::ACHIEVEMENT_LONGPLAY)
+		retroEvent(retroachievements::GAME_FINISH, 0, 0);
+	else if (achievementId == SharedDatabase::Achievement::ACHIEVEMENT_SM_JACKPOT)
+		retroEvent(retroachievements::JACKPOT_EVENT, 0, 0);
+	else if (achievementId == SharedDatabase::Achievement::ACHIEVEMENT_GS_EXIT_TOP)
+		retroEvent(retroachievements::GLOW_EXIT_EVENT, 0, 0);
 	// Can't affect achievements in debug mode (except if dev mode is active)
 	const bool hasDebugModeActive = getSetting(SharedDatabase::Setting::SETTING_DEBUG_MODE, true) != 0;
-	if (hasDebugModeActive && !EngineMain::getDelegate().useDeveloperFeatures())
+	if (hasDebugModeActive && achievementId != retroachievements::ID_BASE + retroachievements::CHEAT && !EngineMain::getDelegate().useDeveloperFeatures())
 		return;
 
 	if (mPlayerProgress.mAchievements.getAchievementState(achievementId) == 0)
@@ -966,6 +984,7 @@ void Game::triggerRestart()
 
 void Game::onGamePause(uint8 canRestart)
 {
+	retroEvent(retroachievements::PAUSE, 0, 0);
 	GameApp::instance().onGamePaused(canRestart != 0);
 }
 
@@ -1002,6 +1021,7 @@ uint16 Game::onFadedOutLoadingZone(uint16 zoneAndAct)
 
 bool Game::onCharacterDied(uint8 playerIndex)
 {
+	if (playerIndex == 0) retroEvent(retroachievements::DEATH, 0, 0);
 	// Death in time attack means level restart
 	if (isInTimeAttackMode())
 	{
@@ -1124,4 +1144,38 @@ void Game::loadModeProfile()
     mPlayerProgress.reset();
     mPlayerProgress.load();
     TimeAttackData::clearCache();
+}
+
+void Game::retroEvent(uint32 event, uint32 a, uint32 b)
+{
+    if (!mEmulatorInterface || event > retroachievements::INVALIDATE) return;
+    auto& memory = *mEmulatorInterface;
+    if (event == retroachievements::LEVEL_START && memory.readMemory8(0xfffffe48) != 0) return;
+    retroachievements::Snapshot s;
+    s.normal = (mMode == Mode::NORMAL_GAME);
+    s.competition = (mMode == Mode::COMPETITION);
+    s.zoneAct = memory.readMemory16(0xffffee4e);
+    const unsigned physicalZoneAct = memory.readMemory16(0xfffffe10);
+    s.rings = memory.readMemory16(0xfffffe20);
+    s.lives = memory.readMemory8(0xfffffe12);
+    s.time = (memory.readMemory8(0xfffffe23) * 60 + memory.readMemory8(0xfffffe24)) * 60 + memory.readMemory8(0xfffffe25);
+    s.character = memory.readMemory16(0xffffff0a);
+    s.chaos = memory.readMemory8(0xffffffb0);
+    s.superEmeralds = memory.readMemory8(0xffffffb1);
+    s.shield = memory.readMemory8(0xffffb02b) & 0x71;
+    s.checkpoint = memory.readMemory8(0xfffffe2a) & 0x7f;
+    s.x = memory.readMemory16(0xffffb010);
+    s.y = memory.readMemory16(0xffffb014);
+    s.cameraY = memory.readMemory16(0xffffee7c);
+    s.input = memory.readMemory8(0xfffff604);
+    s.transformed = memory.readMemory8(0xfffffe19) != 0 || memory.readMemory8(0xfffff667) != 0;
+    s.active = memory.readMemory8(0xfffff600) == 0x0c && memory.readMemory8(0xfffffe48) == 0;
+    s.blueRemaining = memory.readMemory16(0xffffe438);
+    s.ringsRemaining = memory.readMemory16(0xffffe442);
+    // Exclude bonus-stage coordinates and counters from regular-act checks.
+    s.active = s.active && physicalZoneAct < 0x0d00;
+    if (event == retroachievements::COMPETITION_FINISH)
+        s.character = memory.readMemory8(0xffffff8b);
+    mRetroAchievements.process(static_cast<retroachievements::Event>(event), s, a, b,
+        [this](uint32 id) { setAchievementComplete(id); });
 }

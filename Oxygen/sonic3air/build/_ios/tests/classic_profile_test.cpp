@@ -1,4 +1,6 @@
 #include "sonic3air/data/ClassicModeRules.h"
+#include "sonic3air/data/PlayerProgress.h"
+#include "sonic3air/data/RetroAchievementCatalog.h"
 #include "oxygen/simulation/PersistentData.h"
 #include "oxygen/helper/ScaledScreenRect.h"
 #include "sonic3air/scriptimpl/ScrollBuffer.h"
@@ -52,6 +54,35 @@ int main(int argc, char** argv)
     assert(data.getData(file, key) == std::vector<uint8>({1,2,3}));
     assert(std::filesystem::is_regular_file(normal + L"storage/s3air_savedata.bin"));
     assert(std::filesystem::is_regular_file(classic + L"storage/s3air_savedata.bin"));
+
+    // Serialize the real achievement map, including imported IDs above 16 bits.
+    detail::PlayerAchievementsData anniversaryAchievements, classicAchievements;
+    anniversaryAchievements.mAchievementStates[0x0001] = 1; // Existing AIR unlock
+    anniversaryAchievements.mAchievementStates[retroachievements::ID_BASE] = 1;
+    classicAchievements.mAchievementStates[retroachievements::ID_BASE + retroachievements::CHEAT] = 1;
+    const auto storeAchievements = [&](const std::wstring& path, detail::PlayerAchievementsData& achievements) {
+        std::vector<uint8> buffer;
+        VectorBinarySerializer serializer(false, buffer);
+        achievements.serializeAchievements(serializer);
+        data.loadFromBasePath(path + L"storage/");
+        data.setData("s3air_achievements", "Achievements", buffer);
+        data.updatePersistentData();
+    };
+    storeAchievements(normal, anniversaryAchievements);
+    storeAchievements(classic, classicAchievements);
+    for (int repeat=0; repeat<3; ++repeat) {
+        for (bool isClassic : {false,true}) {
+            data.loadFromBasePath((isClassic ? classic : normal) + L"storage/");
+            const auto& buffer = data.getData(rmx::getMurmur2_64("s3air_achievements"), rmx::getMurmur2_64("Achievements"));
+            VectorBinarySerializer reader(true, buffer);
+            detail::PlayerAchievementsData reloaded;
+            reloaded.serializeAchievements(reader);
+            assert(reloaded.isEqual(isClassic ? classicAchievements : anniversaryAchievements));
+            assert(reloaded.getAchievementState(0x0001) == (isClassic ? 0 : 1));
+            assert(reloaded.getAchievementState(retroachievements::ID_BASE) == (isClassic ? 0 : 1));
+            assert(reloaded.getAchievementState(retroachievements::ID_BASE + retroachievements::CHEAT) == (isClassic ? 1 : 0));
+        }
+    }
 
     // 224 scanlines end exactly where the dynamic-object list begins.
     struct Memory {

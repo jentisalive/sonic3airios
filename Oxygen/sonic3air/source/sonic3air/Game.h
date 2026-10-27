@@ -11,6 +11,7 @@
 #include "sonic3air/audio/RemasteredMusicDownload.h"
 #include "sonic3air/client/GameClient.h"
 #include "sonic3air/data/PlayerProgress.h"
+#include "sonic3air/data/RetroAchievements.h"
 #include "sonic3air/data/PlayerRecorder.h"
 #include "sonic3air/helper/BlueSpheresRendering.h"
 #include "sonic3air/resources/DynamicSprites.h"
@@ -69,6 +70,7 @@ public:
 
 	void onPreUpdateFrame();
 	void onPostUpdateFrame();
+	void retroEvent(uint32 event, uint32 a, uint32 b);
 	void onUpdateControls();
 
 	void updateSpecialInput(float timeElapsed);
@@ -134,6 +136,7 @@ private:
 private:
 	EmulatorInterface* mEmulatorInterface = nullptr;
 
+	retroachievements::Tracker mRetroAchievements;
 	Mode mMode = Mode::UNDEFINED;
 	uint32 mSubMode = 0;
 

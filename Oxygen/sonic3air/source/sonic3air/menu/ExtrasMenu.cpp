@@ -92,6 +92,7 @@ void ExtrasMenu::setBaseState(BaseState baseState)
 
 void ExtrasMenu::onFadeIn()
 {
+	mDescriptionLinesCache.clear();
 	mState = State::APPEAR;
 
 	// (Re)count completed achievements
@@ -532,47 +533,37 @@ void ExtrasMenu::render()
 				const int localStartY = py;
 				const int px = baseX + roundToInt(interpolate(12.0f, 0.0f, entry.mAnimation.mHighlight));
 
-				// Background
+				// Allow long challenge descriptions to wrap inside either screen width.
+				auto& textLines = mDescriptionLinesCache[entry.mData];
+				if (textLines.empty())
+					utils::splitTextIntoLines(textLines, achievement->mDescription, global::mOxyfontTiny,
+						std::min(260, cardHalfWidth * 2 - 90));
+				const int cardHeight = std::max(entry.mData >= retroachievements::ID_BASE ? 61 : 52, 27 + (int)textLines.size() * 10);
+				const int textX = px - cardHalfWidth + 75;
+
 				DrawerTexture& frameTexture = global::mAchievementsFrame;
 				DrawerTexture& achievementImage = global::mAchievementImage[achievement->mType | ((isSelected || isComplete) ? 0 : 0x80000000)];
-				drawer.drawRect(Recti(px - cardHalfWidth, py, std::min((int)frameTexture.getWidth(), mRect.width - 24), frameTexture.getHeight()), frameTexture, Color(1.0f, 1.0f, 1.0f, tabAlpha));
+				drawer.drawRect(Recti(px - cardHalfWidth, py, std::min((int)frameTexture.getWidth(), mRect.width - 24), cardHeight), frameTexture, Color(1.0f, 1.0f, 1.0f, tabAlpha));
 				drawer.drawRect(Recti(px - cardHalfWidth + 2, py + 2, achievementImage.getWidth(), achievementImage.getHeight()), achievementImage, Color(1.0f, 1.0f, 1.0f, tabAlpha));
 				py += 7;
 
-				// Title
 				String name(achievement->mName);
 				name.upperCase();
-				drawer.printText(global::mOxyfontRegular, Recti(px - cardHalfWidth + 75, py, 0, 10), name, 1, color);
-
-				// Description
+				if (entry.mData >= retroachievements::ID_BASE && entry.mData < retroachievements::ID_BASE + retroachievements::COUNT)
 				{
-					std::vector<std::string_view>* textLines = nullptr;
-					{
-						const auto it = mDescriptionLinesCache.find(entry.mData);
-						if (it == mDescriptionLinesCache.end())
-						{
-							textLines = &mDescriptionLinesCache[entry.mData];
-							utils::splitTextIntoLines(*textLines, achievement->mDescription, global::mOxyfontTiny, 260);
-							if (!achievement->mHint.empty())
-								textLines->emplace_back("Hint: " + achievement->mHint);
-						}
-						else
-						{
-							textLines = &it->second;
-						}
-					}
-
-					py += (textLines->size() == 1) ? 9 : 5;
-					const Color color2 = isSelected ? Color(1.0f, 1.0f, 0.6f, tabAlpha) : Color(0.9f, 0.9f, 0.9f, tabAlpha);
-
-					for (const std::string_view& textLine : *textLines)
-					{
-						py += 10;
-						drawer.printText(global::mOxyfontTiny, Recti(px - 105, py, 0, 10), textLine, 1, color2);
-					}
+					const auto& imported = retroachievements::CATALOG[entry.mData - retroachievements::ID_BASE];
+					drawer.printText(global::mOxyfontTiny, Recti(px - cardHalfWidth + 34, localStartY + cardHeight - 9, 0, 8), std::to_string(imported.points) + " pts", 5, color);
 				}
+				drawer.printText(global::mOxyfontRegular, Recti(textX, py, 0, 10), name, 1, color);
 
-				py = localStartY + 49;
+				py += (textLines.size() == 1) ? 9 : 5;
+				const Color color2 = isSelected ? Color(1.0f, 1.0f, 0.6f, tabAlpha) : Color(0.9f, 0.9f, 0.9f, tabAlpha);
+				for (const std::string_view& textLine : textLines)
+				{
+					py += 10;
+					drawer.printText(global::mOxyfontTiny, Recti(textX, py, 0, 10), textLine, 1, color2);
+				}
+				py = localStartY + cardHeight;
 			}
 			else
 			{

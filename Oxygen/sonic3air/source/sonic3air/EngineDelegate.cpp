@@ -176,6 +176,7 @@ void EngineDelegate::onControlsUpdate()
 
 void EngineDelegate::onPreSaveStateLoad()
 {
+	mGame.retroEvent(retroachievements::INVALIDATE, 0, 0);
 	mGame.resetCurrentMode();
 }
 

@@ -1,30 +1,36 @@
 <div align="center">
 
-## Sonic 3 A.I.R. for iOS · v0.2.3
+## Sonic 3 A.I.R. for iOS · v0.2.4
 
-**Original menu spacing, shifted left for Classic Mode**
+**53 more challenges, built into the native port**
 
-[Download unsigned IPA](https://github.com/jentisalive/sonic3airios/releases/download/ios-v0.2.3/Sonic3AIR-iOS-unsigned.ipa)
+[Download unsigned IPA](https://github.com/jentisalive/sonic3airios/releases/download/ios-v0.2.4/Sonic3AIR-iOS-unsigned.ipa)
 
 </div>
 
-### Classic menu layout
+### Achievements
 
-- Removed the taller 400 × 300 menu canvas. Classic gameplay and menus now share the original **320 × 224** field with 4:3 output.
-- Restored the original main-menu row positions and moved the entries **80 pixels left**. Classic Mode / Anniversary Mode remains below Mods.
-- Moved submenu column centers, controls and footers inward for the narrower field. Options use the compact font so labels and values fit.
-- Retained the original background style and adjusted the left panel and logo to fit without cropping the menu text.
+- Added all **53 challenges** from the [RetroAchievements Sonic 3 & Knuckles base set](https://retroachievements.org/game/4874) as local AIR achievements. The original 18 AIR achievements remain available.
+- Find them in **Extras → Achievements**, with English descriptions, local point labels and the existing unlock notifications.
+- Covers zone clears, character endings, emeralds, rings, lives, secret areas, bonus stages, five Competition tracks and Grand Prix.
+- Restricted challenges track damage (including shield loss), death, transformations, bonus entries, Left input and pausing where applicable. Merely loading a checkpoint does not complete these challenges.
+- Unlocks use the existing **separate Classic and Anniversary save profiles**. New achievements do not change the original AIR secret-unlock thresholds.
+- Long descriptions wrap within each menu width, and achievement cards grow to fit the text.
 
-### Safety and progress
+### Local progress
 
-The scroll-buffer overflow fix is retained: Classic stays at **224 scanlines**, so the dynamic-object list is not overwritten. There are no extra gameplay rows at the bottom. The **30 FPS** presentation cap, fixed Classic preferences, separate saves and Anniversary preferences are preserved.
+This is an **offline adaptation to AIR's native events**, with no RetroAchievements account connection or online point submission. Normal Game awards the adventure challenges; Competition Mode awards the race challenges. AIR Act Select and AIR Time Attack are excluded. Using Level Select or Debug blocks other imported unlocks for the current session. Loading a save state cancels restricted attempts.
 
-### Install & testing
+Original challenge design: **Totaya, blazethecat and RetroAchievements contributors**. Descriptions are rewritten for this port; artwork uses AIR's existing achievement images.
 
-Install **Sonic3AIR-iOS-unsigned.ipa** over the regular Sonic 3 AIR app, keeping Documents. Your compatible Sonic 3 & Knuckles ROM is required and is not included.
+### Install & validation
 
-Checks cover save-profile isolation, the scroll/object memory boundary, 224-line screen limits, coordinate mapping and main-menu/Options font bounds using the actual font metadata. CI builds the native arm64 app and verifies its bundle. The compact layout and the affected AIZ section still need verification on a device.
+Install **Sonic3AIR-iOS-unsigned.ipa** over the regular port and keep Documents. Your compatible Sonic 3 & Knuckles ROM is required and is not included.
+
+Automated tests exercise all 53 award paths, failure conditions and timing boundaries. Existing save-profile, scanline-safety, Retina and compact-menu checks are retained. CI compiles the native arm64 app and verifies its bundle. Full gameplay and achievement notifications still need verification on an iPhone.
+
+The Classic presentation and menu layout from v0.2.3 are retained.
 
 [Source](https://github.com/jentisalive/sonic3airios/tree/ios-native) · [Original project](https://sonic3air.org/)
 
-Unofficial, non-profit port of Eukaryot's Sonic 3 A.I.R. GPL-3.0. Sonic the Hedgehog and related properties belong to SEGA. Not affiliated with SEGA or Sonic Team.
+Unofficial port of Eukaryot's Sonic 3 A.I.R. GPL-3.0. Sonic the Hedgehog and related properties belong to SEGA. Not affiliated with SEGA or Sonic Team.
