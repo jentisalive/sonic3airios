@@ -11,6 +11,7 @@
 #include "sonic3air/audio/RemasteredMusicDownload.h"
 #include "sonic3air/client/GameClient.h"
 #include "sonic3air/data/PlayerProgress.h"
+#include "sonic3air/data/RetroAchievements.h"
 #include "sonic3air/data/PlayerRecorder.h"
 #include "sonic3air/helper/BlueSpheresRendering.h"
 #include "sonic3air/resources/DynamicSprites.h"
@@ -43,6 +44,8 @@ public:
 
 	void startup(EmulatorInterface& emulatorInterface);
 	void shutdown();
+	bool setClassicMode(bool enabled);
+	bool isClassicMode();
 	void update(float timeElapsed);
 
 	void registerScriptBindings(lemon::Module& module);
@@ -67,6 +70,7 @@ public:
 
 	void onPreUpdateFrame();
 	void onPostUpdateFrame();
+	void retroEvent(uint32 event, uint32 a, uint32 b);
 	void onUpdateControls();
 
 	void updateSpecialInput(float timeElapsed);
@@ -132,11 +136,15 @@ private:
 private:
 	EmulatorInterface* mEmulatorInterface = nullptr;
 
+	retroachievements::Tracker mRetroAchievements;
 	Mode mMode = Mode::UNDEFINED;
 	uint32 mSubMode = 0;
 
 	BlueSpheresRendering mBlueSpheresRendering;
 	PlayerProgress mPlayerProgress;
+	void loadModeProfile();
+	std::wstring mAnniversarySaveStatesDir;
+	std::wstring mAnniversarySaveStatesDirLocal;
 	PlayerRecorder mPlayerRecorder;
 	GameClient mGameClient;
 	DynamicSprites mDynamicSprites;

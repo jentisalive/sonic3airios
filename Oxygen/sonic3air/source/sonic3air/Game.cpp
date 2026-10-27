@@ -12,6 +12,8 @@
 #include "sonic3air/audio/AudioOut.h"
 #include "sonic3air/data/SharedDatabase.h"
 #include "sonic3air/data/TimeAttackData.h"
+#include "sonic3air/data/ClassicModeRules.h"
+#include "oxygen/simulation/PersistentData.h"
 #include "sonic3air/helper/GameUtils.h"
 #include "sonic3air/helper/DiscordIntegration.h"
 #include "sonic3air/menu/GameApp.h"
@@ -27,6 +29,8 @@
 #include "oxygen/drawing/software/Blitter.h"
 #include "oxygen/engine/modding/ModManager.h"
 #include "oxygen/helper/FileHelper.h"
+#include "oxygen/platform/PlatformFunctions.h"
+#include "oxygen/engine/EngineMain.h"
 #include "oxygen/rendering/parts/RenderParts.h"
 #include "oxygen/simulation/CodeExec.h"
 #include "oxygen/simulation/EmulatorInterface.h"
@@ -81,7 +85,9 @@ void Game::startup(EmulatorInterface& emulatorInterface)
 	mEmulatorInterface = &emulatorInterface;
 	mPlayerRecorder.setEmulatorInterface(emulatorInterface);
 
-	mPlayerProgress.load();
+	mAnniversarySaveStatesDir = Configuration::instance().mSaveStatesDir;
+	mAnniversarySaveStatesDirLocal = Configuration::instance().mSaveStatesDirLocal;
+	loadModeProfile();
 	mBlueSpheresRendering.startup();
 	mGameClient.setupClient();
 	checkActiveModsUsedFeatures();
@@ -154,6 +160,7 @@ void Game::registerScriptBindings(lemon::Module& module)
 
 	// Game
 	{
+		builder.addNativeFunction("Game.isClassicMode", lemon::wrap(*this, &Game::isClassicMode), defaultFlags);
 		builder.addNativeFunction("Game.getSetting", lemon::wrap(*this, &Game::useSetting), defaultFlags)
 			.setParameters("settingId");
 
@@ -171,6 +178,7 @@ void Game::registerScriptBindings(lemon::Module& module)
 		builder.addNativeFunction("Game.allowRestartInGamePause", lemon::wrap(*this, &Game::allowRestartInGamePause), defaultFlags)
 			.setParameters("canRestart");
 
+		builder.addNativeFunction("Game.retroEvent", lemon::wrap(*this, &Game::retroEvent), defaultFlags);
 		builder.addNativeFunction("Game.onLevelStart", lemon::wrap(*this, &Game::onLevelStart), defaultFlags);
 
 		builder.addNativeFunction("Game.onZoneActCompleted", lemon::wrap(*this, &Game::onZoneActCompleted), defaultFlags)
@@ -243,6 +251,9 @@ void Game::registerScriptBindings(lemon::Module& module)
 
 uint32 Game::getSetting(uint32 settingId, bool ignoreGameMode) const
 {
+	uint32 forcedValue;
+	if (Configuration::instance().mClassicMode && ClassicModeRules::forcedSetting(settingId, forcedValue))
+		return forcedValue;
 	const SharedDatabase::Setting* setting = SharedDatabase::getSetting(settingId);
 
 	if (!ignoreGameMode && isInTimeAttackMode())
@@ -290,6 +301,9 @@ uint32 Game::getSetting(uint32 settingId, bool ignoreGameMode) const
 
 void Game::setSetting(uint32 settingId, uint32 value)
 {
+	uint32 forcedValue;
+	if (Configuration::instance().mClassicMode && ClassicModeRules::forcedSetting(settingId, forcedValue))
+		return;
 	RMX_CHECK(nullptr != SharedDatabase::getSetting(settingId), "Setting not found", return);
 	ConfigurationImpl::instance().mActiveGameSettings->setValue(settingId, value);
 }
@@ -300,7 +314,7 @@ void Game::checkForUnlockedSecrets(bool saveIfAnyUnlocked)
 	uint32 achievementsCompleted = 0;
 	for (const SharedDatabase::Achievement& achievement : SharedDatabase::getAchievements())
 	{
-		if (mPlayerProgress.mAchievements.getAchievementState(achievement.mType) > 0)
+		if (achievement.mType < retroachievements::ID_BASE && mPlayerProgress.mAchievements.getAchievementState(achievement.mType) > 0)
 		{
 			++achievementsCompleted;
 		}
@@ -451,6 +465,7 @@ void Game::startIntoLevelSelect()
 	simulation.resetIntoGame("EntryFunctions.levelSelect");
 
 	startIntoGameInternal();
+	retroEvent(retroachievements::CHEAT_EVENT, 0, 0);
 }
 
 void Game::startIntoMainMenuBG()
@@ -527,6 +542,15 @@ void Game::onPostUpdateFrame()
 				GameApp::instance().showSkippableCutsceneWindow(false);
 			}
 		}
+	}
+
+	// Run after every simulation frame, independently of the 30 FPS presentation cap.
+	if (mMode == Mode::NORMAL_GAME || mMode == Mode::COMPETITION)
+	{
+		const uint8 gameMode = emulatorInterface.readMemory8(0xfffff600) & 0x7f;
+		if (getSetting(SharedDatabase::Setting::SETTING_DEBUG_MODE, true) != 0 || gameMode == 0x1c)
+			retroEvent(retroachievements::CHEAT_EVENT, 0, 0);
+		retroEvent(retroachievements::FRAME, 0, 0);
 	}
 
 	// Update player recorder
@@ -838,6 +862,13 @@ void Game::checkActiveModsUsedFeatures()
 
 void Game::startIntoGameInternal()
 {
+	mRetroAchievements = {};
+	// Menus keep their native layout; every game/intro entry chooses a real field size.
+	if (!isInMainMenuMode())
+	{
+		Configuration::instance().mClassicMenuActive = false;
+		VideoOut::instance().setScreenSize(ClassicModeRules::gameSize(Configuration::instance().mClassicMode));
+	}
 	// Setup defaults -- these should not get used outside of Time Attack anyway
 	mLastZoneAndAct = 0;
 	mLastCharacters = 0;
@@ -898,9 +929,15 @@ bool Game::isAchievementComplete(uint32 achievementId)
 
 void Game::setAchievementComplete(uint32 achievementId)
 {
+	if (achievementId == SharedDatabase::Achievement::ACHIEVEMENT_LONGPLAY)
+		retroEvent(retroachievements::GAME_FINISH, 0, 0);
+	else if (achievementId == SharedDatabase::Achievement::ACHIEVEMENT_SM_JACKPOT)
+		retroEvent(retroachievements::JACKPOT_EVENT, 0, 0);
+	else if (achievementId == SharedDatabase::Achievement::ACHIEVEMENT_GS_EXIT_TOP)
+		retroEvent(retroachievements::GLOW_EXIT_EVENT, 0, 0);
 	// Can't affect achievements in debug mode (except if dev mode is active)
 	const bool hasDebugModeActive = getSetting(SharedDatabase::Setting::SETTING_DEBUG_MODE, true) != 0;
-	if (hasDebugModeActive && !EngineMain::getDelegate().useDeveloperFeatures())
+	if (hasDebugModeActive && achievementId != retroachievements::ID_BASE + retroachievements::CHEAT && !EngineMain::getDelegate().useDeveloperFeatures())
 		return;
 
 	if (mPlayerProgress.mAchievements.getAchievementState(achievementId) == 0)
@@ -947,6 +984,7 @@ void Game::triggerRestart()
 
 void Game::onGamePause(uint8 canRestart)
 {
+	retroEvent(retroachievements::PAUSE, 0, 0);
 	GameApp::instance().onGamePaused(canRestart != 0);
 }
 
@@ -973,6 +1011,13 @@ void Game::onZoneActCompleted(uint16 zoneAndAct)
 
 uint16 Game::onTriggerNextZone(uint16 zoneAndAct)
 {
+	// These exits do not always create a normal level-results object.
+	const uint16 currentAct = mEmulatorInterface->readMemory16(0xffffee4e);
+	const uint16 physicalAct = mEmulatorInterface->readMemory16(0xfffffe10);
+	if (currentAct == 0x0a00 && zoneAndAct == 0x0b00)
+		retroEvent(retroachievements::ACT_FINISH, 0x0a00, 0);
+	if ((physicalAct == 0x1700 || currentAct == 0x0b01) && (zoneAndAct == 0x0c00 || zoneAndAct == 0x0d01))
+		retroEvent(retroachievements::ACT_FINISH, 0x0b01, 0);
 	return zoneAndAct;
 }
 
@@ -983,6 +1028,7 @@ uint16 Game::onFadedOutLoadingZone(uint16 zoneAndAct)
 
 bool Game::onCharacterDied(uint8 playerIndex)
 {
+	if (playerIndex == 0) retroEvent(retroachievements::DEATH, 0, 0);
 	// Death in time attack means level restart
 	if (isInTimeAttackMode())
 	{
@@ -1065,4 +1111,79 @@ void Game::endSkippableCutscene()
 bool Game::isInSkippableCutscene()
 {
 	return mSkippableCutsceneFrames > 0;
+}
+
+
+bool Game::isClassicMode()
+{
+	return Configuration::instance().mClassicMode;
+}
+
+bool Game::setClassicMode(bool enabled)
+{
+    Configuration& config = Configuration::instance();
+    if (config.mClassicMode == enabled) return true;
+    const std::wstring root = ClassicModeRules::saveRoot(config.mAppDataPath, enabled);
+    if (!FTX::FileSystem->exists(root + L"storage/") && !FTX::FileSystem->createDirectory(root + L"storage/"))
+    {
+        PlatformFunctions::showMessageBox("Save profile", "Could not create the save folder. The mode was not changed.");
+        return false;
+    }
+    // Complete all writes in the old profile before changing the active base path.
+    mPlayerProgress.save(true);
+    PersistentData::instance().updatePersistentData();
+    config.mClassicMode = enabled;
+    loadModeProfile();
+    EngineMain::instance().setVSyncMode(config.mFrameSync);
+    config.saveSettings();
+    return true;
+}
+
+void Game::loadModeProfile()
+{
+    Configuration& config = Configuration::instance();
+    const std::wstring root = ClassicModeRules::saveRoot(config.mAppDataPath, config.mClassicMode);
+    config.mPersistentDataBasePath = root + L"storage/";
+	RMX_LOG_INFO("Mode profile: " << (config.mClassicMode ? "Classic" : "Anniversary") << "; storage: " << WString(config.mPersistentDataBasePath).toStdString());
+    config.mSaveStatesDir = config.mClassicMode ? root + L"savestates/" : mAnniversarySaveStatesDir;
+    config.mSaveStatesDirLocal = config.mClassicMode ? root + L"savestates/" : mAnniversarySaveStatesDirLocal;
+    PersistentData::instance().loadFromBasePath(config.mPersistentDataBasePath);
+    mPlayerProgress.reset();
+    mPlayerProgress.load();
+    TimeAttackData::clearCache();
+}
+
+void Game::retroEvent(uint32 event, uint32 a, uint32 b)
+{
+    if (!mEmulatorInterface || event > retroachievements::INVALIDATE) return;
+    auto& memory = *mEmulatorInterface;
+    if (event == retroachievements::LEVEL_START && memory.readMemory8(0xfffffe48) != 0) return;
+    retroachievements::Snapshot s;
+    s.normal = (mMode == Mode::NORMAL_GAME);
+    s.competition = (mMode == Mode::COMPETITION);
+    s.zoneAct = memory.readMemory16(0xffffee4e);
+    const unsigned physicalZoneAct = memory.readMemory16(0xfffffe10);
+    s.rings = memory.readMemory16(0xfffffe20);
+    s.lives = memory.readMemory8(0xfffffe12);
+    s.time = (memory.readMemory8(0xfffffe23) * 60 + memory.readMemory8(0xfffffe24)) * 60 + memory.readMemory8(0xfffffe25);
+    s.character = memory.readMemory16(0xffffff0a);
+    s.chaos = memory.readMemory8(0xffffffb0);
+    s.superEmeralds = memory.readMemory8(0xffffffb1);
+    s.shield = memory.readMemory8(0xffffb02b) & 0x71;
+    s.checkpoint = memory.readMemory8(0xfffffe2a) & 0x7f;
+    s.x = memory.readMemory16(0xffffb010);
+    s.y = memory.readMemory16(0xffffb014);
+    s.cameraY = memory.readMemory16(0xffffee7c);
+    s.input = memory.readMemory8(0xfffff604);
+    s.transformed = memory.readMemory8(0xfffffe19) != 0 || memory.readMemory8(0xfffff667) != 0;
+    s.countersActive = memory.readMemory8(0xfffff600) == 0x0c;
+    s.active = s.countersActive && memory.readMemory8(0xfffffe48) == 0;
+    s.blueRemaining = memory.readMemory16(0xffffe438);
+    s.ringsRemaining = memory.readMemory16(0xffffe442);
+    // Exclude bonus-stage coordinates and counters from regular-act checks.
+    s.active = s.active && physicalZoneAct < 0x0d00;
+    if (event == retroachievements::COMPETITION_FINISH)
+        s.character = memory.readMemory8(0xffffff8b);
+    mRetroAchievements.process(static_cast<retroachievements::Event>(event), s, a, b,
+        [this](uint32 id) { setAchievementComplete(id); });
 }

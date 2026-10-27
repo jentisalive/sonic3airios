@@ -422,6 +422,7 @@ void OptionsMenu::textinput(const rmx::TextInputEvent& ev)
 
 void OptionsMenu::update(float timeElapsed)
 {
+	mScrolling.setVisibleAreaHeight(std::max(1, mRect.height - 30));
 	mDeltaSecondsForRendering += timeElapsed;
 	mActiveTabAnimated += clamp((float)mActiveTab - mActiveTabAnimated, -timeElapsed * 4.0f, timeElapsed * 4.0f);
 
@@ -807,7 +808,7 @@ void OptionsMenu::render()
 	renderContext.mDeltaSeconds = std::min(mDeltaSecondsForRendering, 0.1f);
 	mDeltaSecondsForRendering = 0.0f;
 
-	int anchorX = 200;
+	int anchorX = mRect.width / 2;
 	int anchorY = 0;
 	float alpha = 1.0f;
 	if (mState != State::SHOW && mState != State::FADE_TO_GAME)
@@ -943,10 +944,10 @@ void OptionsMenu::render()
 			}
 		}
 
-		int bottomY = 224;
+		int bottomY = mRect.height;
 		if (ConfigurationImpl::instance().mShowControlsDisplay)
 		{
-			bottomY = 230 - roundToInt(alpha * 16.0f);
+			bottomY = mRect.height + 6 - roundToInt(alpha * 16.0f);
 			//const int innerIndentX = (global::mDataSelectBackground.getWidth() - 400) / 2;
 			//for (int k = 0; k < 5; ++k)
 			//{
