@@ -23,7 +23,8 @@ ln -s "$repo_root/framework/external/sdl/SDL2/include" "$test_build_dir/include/
   -o "$test_build_dir/window_pixel_mapping_test"
 "$test_build_dir/window_pixel_mapping_test"
 
-mapfile -t base_sources < <(rg --files "$repo_root/librmx/source/rmxbase" -g "*.cpp")
+shopt -s globstar
+base_sources=("$repo_root"/librmx/source/rmxbase/**/*.cpp)
 "${CXX:-c++}" -std=c++17 -ffunction-sections -fdata-sections \
   -I "$repo_root/librmx/source" -I "$test_build_dir/include" \
   -I "$repo_root/Oxygen/oxygenengine/source" -I "$repo_root/Oxygen/lemonscript/source" \
