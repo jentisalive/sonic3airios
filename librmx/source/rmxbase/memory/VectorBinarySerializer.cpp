@@ -23,7 +23,7 @@ namespace
 			if (readPosition + sizeof(T) > buffer.size())
 				return false;
 
-			value = rmx::readMemoryUnaligned<T>(&buffer[readPosition]);
+			memcpy(&value, &buffer[readPosition], sizeof(T));
 			readPosition += sizeof(T);
 		}
 		else
@@ -31,7 +31,7 @@ namespace
 			const size_t oldSize = buffer.size();
 			buffer.resize(oldSize + sizeof(T));
 		#if !defined(PLATFORM_VITA)
-			*(T*)&buffer[oldSize] = value;
+			memcpy(&buffer[oldSize], &value, sizeof(T));
 		#else
 			// Use memcpy to avoid issues with unaligned memory access
 			sceClibMemcpy(&buffer[oldSize], &value, sizeof(T));
@@ -49,7 +49,7 @@ namespace
 				return false;
 
 		#if !defined(PLATFORM_VITA)
-			value = *(bool*)&buffer[readPosition];
+			value = buffer[readPosition] != 0;
 		#else
 			// Use memcpy to avoid issues with unaligned memory access
 			sceClibMemcpy(&value, &buffer[readPosition], sizeof(bool));

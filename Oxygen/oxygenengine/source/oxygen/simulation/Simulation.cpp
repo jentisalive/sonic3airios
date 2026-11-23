@@ -195,24 +195,37 @@ void Simulation::reloadLastState()
 
 bool Simulation::loadState(const std::wstring& filename, bool showError)
 {
+	std::vector<uint8> state;
+	if (!FTX::FileSystem->readFile(filename, state))
+	{
+		if (showError) RMX_ERROR("Failed to read save state '" << WString(filename).toStdString() << "'", );
+		return false;
+	}
+	if (!loadState(state, showError)) return false;
+	mStateLoaded = filename;
+	return true;
+}
+
+bool Simulation::loadState(const std::vector<uint8>& state, bool showError, bool exactSnapshot)
+{
 	VideoOut::instance().reset();
 	EngineMain::instance().getAudioOut().reset();
 
 	SaveStateSerializer::StateType stateType;
 	SaveStateSerializer serializer(*this, RenderParts::instance());
 
-	const bool success = serializer.loadState(filename, &stateType);
+	const bool success = serializer.loadState(state, &stateType);
 	if (!success)
 	{
 		if (showError)
-			RMX_ERROR("Failed to load save state '" << WString(filename).toStdString() << "'", );
+			RMX_ERROR("Failed to restore simulation state", );
 		return false;
 	}
 
-	mStateLoaded = filename;
-	mCodeExec.reinitRuntime(nullptr, (stateType == SaveStateSerializer::StateType::GENSX) ? CodeExec::CallStackInitPolicy::READ_FROM_ASM : CodeExec::CallStackInitPolicy::USE_EXISTING);
+	mStateLoaded.clear();
+	mCodeExec.reinitRuntime(nullptr, (stateType == SaveStateSerializer::StateType::GENSX) ? CodeExec::CallStackInitPolicy::READ_FROM_ASM : CodeExec::CallStackInitPolicy::USE_EXISTING, nullptr, !exactSnapshot);
 
-	if (Configuration::instance().mDevMode.mApplyModSettingsAfterLoadState)
+	if (!exactSnapshot && Configuration::instance().mDevMode.mApplyModSettingsAfterLoadState)
 	{
 		applyModSettingsToGlobals();
 	}
@@ -373,8 +386,11 @@ bool Simulation::generateFrame()
 		if (!NetplayManager::instance().canBeginNextFrame(mFrameNumber))
 			return false;
 
-		// Tell game instance
+		// A replay can reject a checkpoint during this callback. Do not execute
+		// another script frame after the game has stopped the simulation.
+		const bool wasRunning = mIsRunning;
 		EngineMain::getDelegate().onPreFrameUpdate();
+		if (wasRunning && !mIsRunning) return false;
 
 		// Tell video that we begin a new frame
 		VideoOut::instance().preFrameUpdate();

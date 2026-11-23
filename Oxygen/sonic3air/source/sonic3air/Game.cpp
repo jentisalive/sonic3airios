@@ -86,6 +86,7 @@ Game::Game()
 
 void Game::startup(EmulatorInterface& emulatorInterface)
 {
+	RMX_LOG_INFO("Replay engine format 3: exact VM snapshots enabled");
 	mEmulatorInterface = &emulatorInterface;
 	mPlayerRecorder.setEmulatorInterface(emulatorInterface);
 
@@ -1352,10 +1353,16 @@ bool Game::setSharedModeSaves(bool enabled)
 
 std::string Game::replayCompatibility() const
 {
-    std::string result = "S3AIR-iOS-0.2.5-replay1:";
+    std::string result = "S3AIR-iOS-exact-replay3:";
     result += EngineMain::getDelegate().getAppMetaData().mBuildVersionString;
     for (const auto* module : Application::instance().getSimulation().getCodeExec().getLemonScriptProgram().getModules())
-        result += ":" + std::to_string(module->getCompiledCodeHash());
+    {
+        // getCompiledCodeHash() is a disabled debug feature and returns zero in
+        // release builds. Fingerprint actual bytecode instead of accepting zeros.
+        uint64 hash = rmx::startFNV1a_64();
+        for (const auto* function : module->getScriptFunctions()) hash = function->addToCompiledHash(hash);
+        result += ":" + std::to_string(hash);
+    }
     for (const Mod* mod : ModManager::instance().getActiveMods())
     {
         result += "\n" + mod->mUniqueID + ":" + mod->mDirectoryName + ":" + mod->mModVersion;
@@ -1487,10 +1494,22 @@ bool Game::playReplay(const std::wstring& filename)
     if (!found) return false;
     s3air::ReplayData replay;
     std::vector<uint8> bytes;
-    if (!FTX::FileSystem->readFile(filename, bytes) || !s3air::ReplayData::decode(bytes, replay) ||
-        replay.compatibility != replayCompatibility())
+    RMX_LOG_INFO("Replay: reading recording");
+    if (!FTX::FileSystem->readFile(filename, bytes) || !s3air::ReplayData::decode(bytes, replay))
     {
         PlatformFunctions::showMessageBox("Replay", "This replay is damaged or needs the original game version and mods.");
+        return false;
+    }
+    if (replay.formatVersion < 3)
+    {
+        RMX_LOG_INFO("Replay rejected: legacy script state lacks exact call-stack identity");
+        PlatformFunctions::showMessageBox("Old replay", "This replay was recorded before the crash fix and cannot be restored safely. Please record a new run with version 0.2.7 or later.");
+        return false;
+    }
+    if (replay.compatibility != replayCompatibility())
+    {
+        RMX_LOG_INFO("Replay rejected: script or mod fingerprint differs");
+        PlatformFunctions::showMessageBox("Replay", "This replay requires the original script code and enabled mods/settings.");
         return false;
     }
     stopReplay();
@@ -1518,17 +1537,22 @@ bool Game::playReplay(const std::wstring& filename)
     mReplayAction = 0;
     mSkippableCutsceneFrames = mReplay.cutsceneFrames;
     auto& simulation = Application::instance().getSimulation();
-    VideoOut::instance().reset();
-    AudioOut::instance().reset();
-    SaveStateSerializer serializer(simulation, RenderParts::instance());
-    if (!serializer.loadState(mReplay.state))
+    // Use the normal simulation loader: it resets frame counters, clocks,
+    // rewind state and recorder state as well as restoring the VM and video.
+    simulation.setRunning(false);
+    RMX_LOG_INFO("Replay: restoring exact initial state");
+    if (!simulation.loadState(mReplay.state, false, true))
     {
         stopReplay();
-        PlatformFunctions::showMessageBox("Replay", "The recorded game state could not be loaded.");
+        // Deserialization can have changed RAM/video before rejecting a stack.
+        // Recreate the menu simulation instead of resuming partially loaded code.
+        startIntoMainMenuBG();
+        RMX_LOG_INFO("Replay rejected: state restore failed; menu simulation rebuilt");
+        PlatformFunctions::showMessageBox("Replay", "The recorded state could not be restored. The menu has been restored safely.");
         return false;
     }
-    simulation.getGameRecorder().clear();
-    simulation.getCodeExec().reinitRuntime(nullptr, CodeExec::CallStackInitPolicy::USE_EXISTING);
+    simulation.setRunning(true);
+    RMX_LOG_INFO("Replay: playback started, " << mReplay.frames.size() << " frames");
     simulation.setSimulationFrequencyOverride(float(mReplay.frequency));
     simulation.setSpeed(float(mReplay.initialSpeedMilli) / 1000.0f);
     VideoOut::instance().setScreenSize(ClassicModeRules::gameSize(config.mClassicMode));
@@ -1594,11 +1618,14 @@ void Game::applyReplayActions()
         SaveStateSerializer serializer(simulation, RenderParts::instance());
         if (!serializer.loadState(action.state))
         {
+            RMX_LOG_INFO("Replay: checkpoint restore failed at frame " << mReplayFrame);
+            VideoOut::instance().reset();
             returnToMainMenu();
             simulation.setSpeed(0.0f);
+            simulation.setRunning(false);
             return;
         }
-        simulation.getCodeExec().reinitRuntime(nullptr, CodeExec::CallStackInitPolicy::USE_EXISTING);
+        simulation.getCodeExec().reinitRuntime(nullptr, CodeExec::CallStackInitPolicy::USE_EXISTING, nullptr, false);
         mSkippableCutsceneFrames = action.cutsceneFrames;
         mButtonYPressedDuringSkippableCutscene = action.manualSkip;
         mSpeedrunCutsceneActive = false;

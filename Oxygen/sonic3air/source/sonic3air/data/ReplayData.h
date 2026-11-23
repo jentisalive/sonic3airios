@@ -21,7 +21,7 @@ struct ReplayData
     };
     // One entry per simulated frame: speed after the frame and manual Y before filtering.
     struct FrameControl { uint16_t speedMilli = 1000; bool manualSkip = false; };
-    uint32_t formatVersion = 2; // Runtime-only; v1 has no speed/action timeline.
+    uint32_t formatVersion = 3; // Runtime-only; v1 has no speed/action timeline.
     ReplayScope scope = ReplayScope::EACH_ACT;
     std::array<uint32_t, 2> actTimes{};
     uint16_t initialSpeedMilli = 1000;
@@ -57,7 +57,7 @@ struct ReplayData
         std::vector<uint8_t> out;
         auto number = [&](uint64_t n, size_t size) { for (size_t i = 0; i < size; ++i) out.push_back(uint8_t(n >> (8*i))); };
         auto blob = [&](const auto& data) { number(data.size(), 4); out.insert(out.end(), data.begin(), data.end()); };
-        number(0x50523353, 4); number(2, 4); // S3RP, version 2
+        number(0x50523353, 4); number(3, 4); // S3RP, version 3: exact script states
         number(zoneAct, 2); number(actTime, 4); number(timestamp, 8);
         number(classic, 1); number(speedrun, 1); number(normalGame, 1);
         number(cutsceneFrames, 4); number(frequency, 4); blob(compatibility);
@@ -107,7 +107,7 @@ struct ReplayData
         };
         if (number(4) != 0x50523353) return false;
         const auto version = number(4);
-        if (version != 1 && version != 2) return false;
+        if (version != 1 && version != 2 && version != 3) return false;
         ReplayData data;
         data.formatVersion = uint32_t(version);
         data.zoneAct = uint16_t(number(2)); data.actTime = uint32_t(number(4)); data.timestamp = number(8);

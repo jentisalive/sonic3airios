@@ -50,6 +50,7 @@ public:
 
 	void reloadLastState();
 	bool loadState(const std::wstring& filename, bool showError = true);
+	bool loadState(const std::vector<uint8>& state, bool showError = true, bool exactSnapshot = false);
 	void saveState(const std::wstring& filename);
 
 	bool triggerFullScriptsReload();

@@ -13,7 +13,7 @@ An experimental native port of Sonic 3 A.I.R., powered by the Oxygen Engine, SDL
 ![Status](https://img.shields.io/badge/status-experimental-F5A623?style=flat-square)
 [![License](https://img.shields.io/badge/license-GPL--3.0-2EA44F?style=flat-square)](LICENSE)
 
-**[Download v0.2.4](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.4)** · **[All releases](https://github.com/jentisalive/sonic3airios/releases)** · **[Build guide](Oxygen/sonic3air/build/_ios/README.md)** · **[Original project](https://sonic3air.org/)**
+**[Download v0.2.7](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.7)** · **[All releases](https://github.com/jentisalive/sonic3airios/releases)** · **[Build guide](Oxygen/sonic3air/build/_ios/README.md)** · **[Original project](https://sonic3air.org/)**
 
 </div>
 
@@ -40,7 +40,7 @@ This port runs the game's C++ engine and LemonScript interpreter directly on iOS
 | Installation | Your compatible signing and sideloading method |
 | Game data | Your own compatible Sonic 3 & Knuckles ROM |
 
-1. Download the **[v0.2.4 IPA](https://github.com/jentisalive/sonic3airios/releases/download/ios-v0.2.4/Sonic3AIR-iOS-unsigned.ipa)**.
+1. Download the **[v0.2.7 IPA](https://github.com/jentisalive/sonic3airios/releases/download/ios-v0.2.7/Sonic3AIR-iOS-unsigned.ipa)**.
 2. Sign and install the app using your usual method.
 3. Launch **Sonic 3 AIR**, tap **Choose ROM…**, and select your ROM in Files.
 4. Let the game prepare its scripts on the first launch, then play.
@@ -90,7 +90,11 @@ Press **Y** on a recording and confirm **Delete replay** to delete it; Cancel is
 
 Replays live in `Documents/replays/` and are shared between editions. Use the same game
 build and enabled mods/settings as the recording; changed script code is rejected.
-Recordings are capped at three hours per recording (including both acts in Full Zone mode). The iOS build still needs device validation;
+Recordings are capped at three hours per recording (including both acts in Full Zone mode).
+Version 0.2.7 fixes VM state restoration and uses replay format 3 with exact function
+versions, base-call depths and caller PCs. Replays from 0.2.5/0.2.6 lack these fields:
+they remain visible/deletable, but playback asks you to record a fresh run instead of
+loading them unsafely. Record a new replay after upgrading. The iOS build still needs device validation;
 see the [test checklist](docs/REPLAY_TESTING.md).
 
 ## Install mods
@@ -110,6 +114,7 @@ When no mods are installed, **Open mods folder** opens the native Files picker w
 
 | Version | Highlights | Download |
 | :--- | :--- | :--- |
+| **0.2.7** | Exact replay state restoration, crash guards and script compatibility checks; record new replays after updating | [Release](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.7) |
 | **0.2.4** | 53 offline achievements adapted from the RetroAchievements Sonic 3 & Knuckles set | [Release](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.4) |
 | **0.2.3** | Compact Classic menu layout with original row spacing; scanline safety fix retained | [Release](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.3) |
 | **0.2.0** | Integrated Classic/Anniversary switch, independent saves, 4:3 and 30 FPS | [Release](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.0) |
