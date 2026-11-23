@@ -149,7 +149,10 @@ void LemonScriptRuntime::onProgramUpdated()
 
 bool LemonScriptRuntime::serializeRuntime(VectorBinarySerializer& serializer)
 {
-	return mInternal.mRuntime.serializeState(serializer);
+	std::string error;
+	const bool success = mInternal.mRuntime.serializeState(serializer, &error);
+	if (!success) RMX_LOG_INFO("Script state rejected: " << error);
+	return success;
 }
 
 bool LemonScriptRuntime::callUpdateHook(bool postUpdate)

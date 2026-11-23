@@ -195,24 +195,37 @@ void Simulation::reloadLastState()
 
 bool Simulation::loadState(const std::wstring& filename, bool showError)
 {
+	std::vector<uint8> state;
+	if (!FTX::FileSystem->readFile(filename, state))
+	{
+		if (showError) RMX_ERROR("Failed to read save state '" << WString(filename).toStdString() << "'", );
+		return false;
+	}
+	if (!loadState(state, showError)) return false;
+	mStateLoaded = filename;
+	return true;
+}
+
+bool Simulation::loadState(const std::vector<uint8>& state, bool showError, bool exactSnapshot)
+{
 	VideoOut::instance().reset();
 	EngineMain::instance().getAudioOut().reset();
 
 	SaveStateSerializer::StateType stateType;
 	SaveStateSerializer serializer(*this, RenderParts::instance());
 
-	const bool success = serializer.loadState(filename, &stateType);
+	const bool success = serializer.loadState(state, &stateType);
 	if (!success)
 	{
 		if (showError)
-			RMX_ERROR("Failed to load save state '" << WString(filename).toStdString() << "'", );
+			RMX_ERROR("Failed to restore simulation state", );
 		return false;
 	}
 
-	mStateLoaded = filename;
-	mCodeExec.reinitRuntime(nullptr, (stateType == SaveStateSerializer::StateType::GENSX) ? CodeExec::CallStackInitPolicy::READ_FROM_ASM : CodeExec::CallStackInitPolicy::USE_EXISTING);
+	mStateLoaded.clear();
+	mCodeExec.reinitRuntime(nullptr, (stateType == SaveStateSerializer::StateType::GENSX) ? CodeExec::CallStackInitPolicy::READ_FROM_ASM : CodeExec::CallStackInitPolicy::USE_EXISTING, nullptr, !exactSnapshot);
 
-	if (Configuration::instance().mDevMode.mApplyModSettingsAfterLoadState)
+	if (!exactSnapshot && Configuration::instance().mDevMode.mApplyModSettingsAfterLoadState)
 	{
 		applyModSettingsToGlobals();
 	}
@@ -373,8 +386,11 @@ bool Simulation::generateFrame()
 		if (!NetplayManager::instance().canBeginNextFrame(mFrameNumber))
 			return false;
 
-		// Tell game instance
+		// A replay can reject a checkpoint during this callback. Do not execute
+		// another script frame after the game has stopped the simulation.
+		const bool wasRunning = mIsRunning;
 		EngineMain::getDelegate().onPreFrameUpdate();
+		if (wasRunning && !mIsRunning) return false;
 
 		// Tell video that we begin a new frame
 		VideoOut::instance().preFrameUpdate();
@@ -457,189 +473,76 @@ bool Simulation::generateFrame()
 		if (EngineMain::getDelegate().useDeveloperFeatures())
 		{
 			// Update input recording
-			if (mInputRecorder.isRecording())
-			{
-				InputRecorder::InputState inputState;
-				controlsIn.writeCurrentState(inputState.mInputFlags);
-
-				mInputRecorder.updateRecording(inputState);
-			}
-		}
-
-		// Update game recording
-		if (mGameRecorder.isRecording())
-		{
-			if (!mGameRecorder.hasFrameNumber(mFrameNumber + 1))
-			{
-				GameRecorder::InputData inputData;
-				controlsIn.writeCurrentState(inputData.mInputs);
-
-				// Keyframe every 3 seconds - except when dev mode is active, because rewinding requires more frequent keyframes
-				const int keyframeFrequency = EngineMain::getDelegate().useDeveloperFeatures() ? 10 : 180;
-				const int framesToKeep = EngineMain::getDelegate().useDeveloperFeatures() ? 3600 : 1800;
-				if (((mFrameNumber + 1) % keyframeFrequency) == 0)
-				{
-					recordKeyFrame(mFrameNumber + 1, *this, mGameRecorder, inputData);
-					mGameRecorder.discardOldFrames(framesToKeep);
-				}
-				else
-				{
-					mGameRecorder.addFrame(mFrameNumber + 1, inputData);
-				}
-			}
-		}
-		else if (mGameRecorder.isPlaying() && EngineMain::getDelegate().useDeveloperFeatures())
-		{
-			// Generate a keyframe every 10 frames, to allow for quick rewinds during game recording playback as well
-			const int keyframeFrequency = 10;
-			if (((mFrameNumber + 1) % keyframeFrequency) == 0 && !mGameRecorder.isKeyframe(mFrameNumber + 1) && mGameRecorder.canAddFrame(mFrameNumber + 1))
-			{
-				GameRecorder::InputData inputData;
-				controlsIn.writeCurrentState(inputData.mInputs);
-
-				recordKeyFrame(mFrameNumber + 1, *this, mGameRecorder, inputData);
-			}
-		}
-
-		++mFrameNumber;
-
-		if (mStepsLimit > 0)
-			--mStepsLimit;
-	}
-
-	// Return false if frame got interrupted
-	//  -> In this case, the outer loop should break
-	//  -> Same if code execution is not possible any more
-	return (completedCurrentFrame && mCodeExec.isCodeExecutionPossible());
-}
-
-bool Simulation::jumpToFrame(uint32 frameNumber, bool clearRecordingAfterwards)
-{
-	if (mGameRecorder.isRecording() || mGameRecorder.isPlaying())
-	{
-		if (mGameRecorder.isPlaying())
-			clearRecordingAfterwards = false;
-
-		// Go back until the most recent keyframe, in case the selected frame is not a keyframe itself
-		GameRecorder::PlaybackResult result;
-		uint32 keyframeNumber = frameNumber;
-		if (!mGameRecorder.getFrameData(keyframeNumber, result))
-			return false;
-
-		while (nullptr == result.mData)
-		{
-			if (keyframeNumber == 0)
-				return false;
-			--keyframeNumber;
-			if (!mGameRecorder.getFrameData(keyframeNumber, result))
-				return false;
-		}
-
-		SaveStateSerializer::StateType stateType;
-		SaveStateSerializer serializer(*this, RenderParts::instance());
-
-		const bool success = serializer.loadState(*result.mData, &stateType);
-		if (success)
-		{
-			// Inject inputs for this frame, so that previous input will be set correctly in the next frame
-			ControlsIn::instance().injectInputs(result.mInput->mInputs);
-
-			mCodeExec.reinitRuntime(nullptr, (stateType == SaveStateSerializer::StateType::GENSX) ? CodeExec::CallStackInitPolicy::READ_FROM_ASM : CodeExec::CallStackInitPolicy::USE_EXISTING);
-			mFrameNumber = keyframeNumber;
-			mCurrentTargetFrame = (float)frameNumber;
-
-			if (clearRecordingAfterwards)
-			{
-				// Discard later frames to disable the logic that uses their recorded inputs instead of player input
-				mGameRecorder.discardFramesAfter(frameNumber);
-			}
-			return true;
-		}
-	}
-
-	return false;
-}
-
-int Simulation::setRewind(int rewindSteps)
-{
-	mRewindSteps = rewindSteps;
-	if (mGameRecorder.isRecording())
-		mRewindSteps = std::min<int>(mFrameNumber - mGameRecorder.getRangeStart(), mRewindSteps);
-	return mRewindSteps;
-}
-
-float Simulation::getSimulationFrequency() const
-{
-	return Configuration::instance().mClassicMode ? 60.0f : ((mSimulationFrequencyOverride > 0.0f) ? mSimulationFrequencyOverride : (float)Configuration::instance().mSimulationFrequency);
-}
-
-void Simulation::setSpeed(float emulatorSpeed)
-{
-	mSimulationSpeed = emulatorSpeed;
-	mStepsLimit = -1;
-	mBreakConditions.clearAll();
-}
-
-void Simulation::setNextSingleStep()
-{
-	mStepsLimit = 1;
-}
-
-void Simulation::removeStepsLimit()
-{
-	mStepsLimit = -1;
-}
-
-void Simulation::setBreakCondition(BreakCondition breakCondition, bool enable)
-{
-	mBreakConditions.set(breakCondition, enable);
-}
-
-void Simulation::sendBreakSignal(BreakCondition breakCondition)
-{
-	if (mBreakConditions.isSet(breakCondition))
-	{
-		mStepsLimit = 0;
-	}
-}
-
-void Simulation::refreshDebugging()
-{
-	VideoOut::instance().preRefreshDebugging();
-	mCodeExec.executeScriptFunction("OxygenCallback.setupCustomSidePanelEntries", false);
-	VideoOut::instance().postRefreshDebugging();
-}
-
-uint32 Simulation::saveGameRecording(WString* outFilename)
-{
-	std::wstring filename = L"gamerecording.bin";
-	const std::string timeString = PlatformFunctions::getCompactSystemTimeString();
-	if (!timeString.empty())
-	{
-		filename = L"gamerecording_" + String(timeString).toStdWString() + L".bin";
-	}
-	filename = Configuration::instance().mGameAppDataPath + L"gamerecordings/" + filename;
-
-	if (!mGameRecorder.saveRecording(filename, 180))
-		return 0;
-
-	if (nullptr != outFilename)
-		*outFilename = filename;
-
-	return mGameRecorder.getCurrentNumberOfFrames();
-}
-
-void Simulation::applyModSettingsToGlobals()
-{
-	// Apply mod settings
-	for (Mod* mod : ModManager::instance().getActiveMods())
-	{
-		for (Mod::SettingCategory& modSettingCategory : mod->mSettingCategories)
-		{
-			for (Mod::Setting& modSetting : modSettingCategory.mSettings)
-			{
-				mCodeExec.getLemonScriptRuntime().setGlobalVariableValue<int64>(modSetting.mBinding, modSetting.mCurrentValue);
-			}
-		}
-	}
+			if (mInputRecorde…5115 tokens truncated…ry single-byte corruption, must be rejected without
+    // mutating the caller's already-loaded recording.
+    for (size_t i = 0; i < bytes.size(); ++i) {
+        auto truncated = bytes; truncated.resize(i);
+        assert(!s3air::ReplayData::decode(truncated, copy));
+        assert(copy.encode() == bytes);
+        auto corrupted = bytes; corrupted[i] ^= 0x80;
+        assert(!s3air::ReplayData::decode(corrupted, copy));
+    }
+    assert(copy.scope == s3air::ReplayScope::FULL_ZONE && copy.actTimes[1] == 3721);
+    assert(copy.actions[0].frame == 1 && copy.actions[0].state == std::vector<uint8_t>({9,8,7}));
+    assert(copy.controls[0].manualSkip && copy.controls[0].speedMilli == 4000);
+    auto invalid = original;
+    invalid.events = {{3, 123, 1}};
+    assert(!s3air::ReplayData::decode(invalid.encode(), copy));
+    invalid.events = {{2, 123, 1}, {1, 123, 2}};
+    assert(!s3air::ReplayData::decode(invalid.encode(), copy));
+    invalid = original; invalid.frequency = 0;
+    assert(!s3air::ReplayData::decode(invalid.encode(), copy));
+    invalid = original; invalid.frames.clear();
+    assert(invalid.encode().empty());
+    invalid = original; invalid.state.clear();
+    assert(invalid.encode().empty());
+    // Correct checksum must not allow unknown format versions or oversized strings.
+    auto resign = [](std::vector<uint8_t>& data) {
+        const auto hash = s3air::ReplayData::checksum(data, data.size() - 8);
+        for (size_t i = 0; i < 8; ++i) data[data.size()-8+i] = uint8_t(hash >> (i*8));
+    };
+    auto corrupt = bytes; corrupt[4] = 4; resign(corrupt);
+    assert(!s3air::ReplayData::decode(corrupt, copy));
+    corrupt = bytes;
+    // Compatibility string length follows magic/version/act/time/date/flags/cutscene/frequency.
+    for (int i=0; i<4; ++i) corrupt[33+i] = 0xff;
+    resign(corrupt);
+    assert(!s3air::ReplayData::decode(corrupt, copy));
+    invalid = original; invalid.actions[0].frame = 3;
+    assert(!s3air::ReplayData::decode(invalid.encode(), copy));
+    invalid = original; invalid.actions = {{2,0,false,{1}}, {1,0,false,{2}}};
+    assert(!s3air::ReplayData::decode(invalid.encode(), copy));
+    invalid = original; invalid.actions[0].state.clear();
+    assert(!s3air::ReplayData::decode(invalid.encode(), copy));
+    invalid = original; invalid.controls[0].speedMilli = 0;
+    assert(!s3air::ReplayData::decode(invalid.encode(), copy));
+    invalid = original; invalid.scope = s3air::ReplayScope(9);
+    assert(!s3air::ReplayData::decode(invalid.encode(), copy));
+    assert(s3air::replaySpeedMilli(4.0f) == 4000);
+    assert(s3air::replaySpeedMilli(2.0f) == 2000);
+    assert(s3air::replaySpeedMilli(1.0f) == 1000);
+    assert(s3air::replaySpeedMilli(0.0f, 4000) == 4000);
+    assert(s3air::replaySpeedMilli(-1.0f, 2000) == 2000);
+    assert(s3air::replaySpeedMilli(100.0f) == 32000);
+    using S = s3air::ReplayScope;
+    for (unsigned zone : {0u, 5u, 11u}) {
+        const uint16_t a = uint16_t(zone << 8), b = a | 1;
+        assert(s3air::replayShouldStart(S::EACH_ACT,a) && s3air::replayShouldStart(S::EACH_ACT,b));
+        assert(s3air::replayShouldStart(S::FULL_ZONE,a) && !s3air::replayShouldStart(S::FULL_ZONE,b));
+        assert(s3air::replayShouldStart(S::ACT_1,a) && !s3air::replayShouldStart(S::ACT_1,b));
+        assert(!s3air::replayShouldStart(S::ACT_2,a) && s3air::replayShouldStart(S::ACT_2,b));
+        assert(!s3air::replayShouldFinish(S::FULL_ZONE,a,a,2,false));
+        assert(s3air::replayShouldFinish(S::FULL_ZONE,a,b,2,false));
+        assert(s3air::replayShouldFinish(S::FULL_ZONE,a,a,1,false));
+        assert(s3air::replayShouldFinish(S::FULL_ZONE,a,a,2,true));
+        assert(!s3air::replayShouldFinish(S::FULL_ZONE,a,uint16_t(a+0x100),2,true));
+        assert(s3air::replayShouldFinish(S::EACH_ACT,a,a,2,false));
+        assert(!s3air::replayShouldFinish(S::ACT_1,a,b,2,false));
+    }
+    // Golden v1 file produced by the previous released codec, retained for migration.
+    const std::vector<uint8_t> legacy = {83,51,82,80,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,60,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,1,2,3,1,0,0,0,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,31,74,234,220,106,29,228,236};
+    assert(s3air::ReplayData::decode(legacy, copy));
+    assert(copy.formatVersion == 1 && copy.frames.size() == 1 && copy.zoneAct == 0x101);
+    assert(copy.scope == S::EACH_ACT && copy.actions.empty());
+    std::cout << "Replay v3: four-player input, state actions, cutscene speeds, scope boundaries, v1 migration and corruption checks passed\n";
 }

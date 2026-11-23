@@ -51,3 +51,17 @@ format/storage tests and a successful IPA compile do not replace these device ch
 - Load a save state during recording and verify the discontinuity repeats during
   playback without mutating disk saves. Verify old version 1 replay listings and
   matching-script playback. Test the bounded state-event failure message.
+
+## Version 0.2.7: crash regression
+
+- Old v1/v2 replays must remain listed/deletable, but Play must show the legacy
+  recording message before changing the simulation or progress. Do not re-encode
+  an old file as v3: its script-stack identity was never recorded.
+- Record and play a NEW unmodded AIZ Act 1 run, then ACT Select in both editions.
+  Repeat with the same mods enabled. Test immediate replay start and subsequent
+  starts after returning to the menu, a native restart, and a full-zone transition.
+- Pause/exit and repeat playback. Verify saves and active edition/settings are
+  unchanged after return, and that the menu still runs after rejected state loads.
+- Change a mod's script without changing its mod.json version; playback must reject
+  the new bytecode fingerprint. Inspect logfile for Replay engine format 3, load,
+  playback-start or explicit state-rejection diagnostics.

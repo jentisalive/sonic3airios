@@ -102,7 +102,7 @@ public:
 	void cleanScriptDebug();
 	bool reloadScripts(bool enforceFullReload, bool retainRuntimeState);
 	void restoreRuntimeState(bool hasSaveState);
-	void reinitRuntime(const LemonScriptRuntime::CallStackWithLabels* enforcedCallStack, CallStackInitPolicy callStackInitPolicy, const std::vector<uint8>* serializedRuntimeState = nullptr);
+	void reinitRuntime(const LemonScriptRuntime::CallStackWithLabels* enforcedCallStack, CallStackInitPolicy callStackInitPolicy, const std::vector<uint8>* serializedRuntimeState = nullptr, bool initializeScripts = true);
 
 	inline ExecutionState getExecutionState() const  { return mExecutionState; }
 	inline bool isCodeExecutionPossible() const { return canExecute(); }

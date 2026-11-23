@@ -61,7 +61,7 @@ int main()
         const auto hash = s3air::ReplayData::checksum(data, data.size() - 8);
         for (size_t i = 0; i < 8; ++i) data[data.size()-8+i] = uint8_t(hash >> (i*8));
     };
-    auto corrupt = bytes; corrupt[4] = 3; resign(corrupt);
+    auto corrupt = bytes; corrupt[4] = 4; resign(corrupt);
     assert(!s3air::ReplayData::decode(corrupt, copy));
     corrupt = bytes;
     // Compatibility string length follows magic/version/act/time/date/flags/cutscene/frequency.
@@ -104,5 +104,5 @@ int main()
     assert(s3air::ReplayData::decode(legacy, copy));
     assert(copy.formatVersion == 1 && copy.frames.size() == 1 && copy.zoneAct == 0x101);
     assert(copy.scope == S::EACH_ACT && copy.actions.empty());
-    std::cout << "Replay v2: four-player input, state actions, cutscene speeds, scope boundaries, v1 migration and corruption checks passed\n";
+    std::cout << "Replay v3: four-player input, state actions, cutscene speeds, scope boundaries, v1 migration and corruption checks passed\n";
 }
