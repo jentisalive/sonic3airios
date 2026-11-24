@@ -26,7 +26,8 @@ namespace
 	//  - 5: Added data for ROM based sprites
 	//  - 6: Added spaces manager serialization
 	//  - 7: Added "mRenderPlaneABehindW" flag for plane manager
-	static const constexpr uint8 OXYGEN_SAVESTATE_FORMATVERSION = 7;
+	//  - 8: Exact script call stacks (runtime v2), including overrides/base calls
+	static const constexpr uint8 OXYGEN_SAVESTATE_FORMATVERSION = 8;
 }
 
 
@@ -39,11 +40,13 @@ SaveStateSerializer::SaveStateSerializer(Simulation& simulation, RenderParts& re
 
 bool SaveStateSerializer::loadState(const std::vector<uint8>& input, StateType* outStateType)
 {
+	// A truncated header previously left uninitialized bytes in the signature.
+	if (input.size() < 16) return false;
 	// Deserialize
 	VectorBinarySerializer serializer(true, input);
 
 	StateType stateType = StateType::INVALID;
-	if (!serializeState(serializer, stateType))
+	if (!serializeState(serializer, stateType) || serializer.hasError())
 		return false;
 
 	// Success

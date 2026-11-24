@@ -380,7 +380,7 @@ void CodeExec::restoreRuntimeState(bool hasSaveState)
 	}
 }
 
-void CodeExec::reinitRuntime(const LemonScriptRuntime::CallStackWithLabels* enforcedCallStack, CallStackInitPolicy callStackInitPolicy, const std::vector<uint8>* serializedRuntimeState)
+void CodeExec::reinitRuntime(const LemonScriptRuntime::CallStackWithLabels* enforcedCallStack, CallStackInitPolicy callStackInitPolicy, const std::vector<uint8>* serializedRuntimeState, bool initializeScripts)
 {
 	cleanScriptDebug();
 
@@ -469,8 +469,9 @@ void CodeExec::reinitRuntime(const LemonScriptRuntime::CallStackWithLabels* enfo
 		}
 	}
 
-	// Execute init once
-	mLemonScriptRuntime.callFunctionByName("Engine.onScriptInitialization", false);
+	// Exact replay snapshots already contain initialized globals and a suspended
+	// call stack. Pushing Init again changes fades, cutscenes and mod state.
+	if (initializeScripts) mLemonScriptRuntime.callFunctionByName("Engine.onScriptInitialization", false);
 
 	EngineMain::getDelegate().onRuntimeInit(*this);
 

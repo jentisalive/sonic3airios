@@ -195,24 +195,37 @@ void Simulation::reloadLastState()
 
 bool Simulation::loadState(const std::wstring& filename, bool showError)
 {
+	std::vector<uint8> state;
+	if (!FTX::FileSystem->readFile(filename, state))
+	{
+		if (showError) RMX_ERROR("Failed to read save state '" << WString(filename).toStdString() << "'", );
+		return false;
+	}
+	if (!loadState(state, showError)) return false;
+	mStateLoaded = filename;
+	return true;
+}
+
+bool Simulation::loadState(const std::vector<uint8>& state, bool showError, bool exactSnapshot)
+{
 	VideoOut::instance().reset();
 	EngineMain::instance().getAudioOut().reset();
 
 	SaveStateSerializer::StateType stateType;
 	SaveStateSerializer serializer(*this, RenderParts::instance());
 
-	const bool success = serializer.loadState(filename, &stateType);
+	const bool success = serializer.loadState(state, &stateType);
 	if (!success)
 	{
 		if (showError)
-			RMX_ERROR("Failed to load save state '" << WString(filename).toStdString() << "'", );
+			RMX_ERROR("Failed to restore simulation state", );
 		return false;
 	}
 
-	mStateLoaded = filename;
-	mCodeExec.reinitRuntime(nullptr, (stateType == SaveStateSerializer::StateType::GENSX) ? CodeExec::CallStackInitPolicy::READ_FROM_ASM : CodeExec::CallStackInitPolicy::USE_EXISTING);
+	mStateLoaded.clear();
+	mCodeExec.reinitRuntime(nullptr, (stateType == SaveStateSerializer::StateType::GENSX) ? CodeExec::CallStackInitPolicy::READ_FROM_ASM : CodeExec::CallStackInitPolicy::USE_EXISTING, nullptr, !exactSnapshot);
 
-	if (Configuration::instance().mDevMode.mApplyModSettingsAfterLoadState)
+	if (!exactSnapshot && Configuration::instance().mDevMode.mApplyModSettingsAfterLoadState)
 	{
 		applyModSettingsToGlobals();
 	}
@@ -295,7 +308,7 @@ void Simulation::update(float timeElapsed)
 		mCurrentTargetFrame = roundToDouble(mCurrentTargetFrame + 1.0);
 	}
 
-	const bool useFrameInterpolation = (Configuration::instance().mFrameSync == Configuration::FrameSyncType::FRAME_INTERPOLATION);
+	const bool useFrameInterpolation = !Configuration::instance().mClassicMode && (Configuration::instance().mFrameSync == Configuration::FrameSyncType::FRAME_INTERPOLATION);
 	const uint32 requiredFrameNumber = useFrameInterpolation ? (uint32)std::ceil(mCurrentTargetFrame) : (uint32)roundToInt(mCurrentTargetFrame);
 
 	if (mFrameNumber < requiredFrameNumber)
@@ -309,6 +322,13 @@ void Simulation::update(float timeElapsed)
 			const bool result = generateFrame();
 			if (!result)
 				break;
+			// A game callback can pause at an act boundary. Do not execute the
+			// remaining catch-up frames or carry their time into the next update.
+			if (mSimulationSpeed <= 0.0f)
+			{
+				mCurrentTargetFrame = (double)mFrameNumber;
+				break;
+			}
 
 			// Time limit to prevent non-responding application
 			if (SDL_GetTicks() >= limitTime)
@@ -366,8 +386,11 @@ bool Simulation::generateFrame()
 		if (!NetplayManager::instance().canBeginNextFrame(mFrameNumber))
 			return false;
 
-		// Tell game instance
+		// A replay can reject a checkpoint during this callback. Do not execute
+		// another script frame after the game has stopped the simulation.
+		const bool wasRunning = mIsRunning;
 		EngineMain::getDelegate().onPreFrameUpdate();
+		if (wasRunning && !mIsRunning) return false;
 
 		// Tell video that we begin a new frame
 		VideoOut::instance().preFrameUpdate();
@@ -563,7 +586,7 @@ int Simulation::setRewind(int rewindSteps)
 
 float Simulation::getSimulationFrequency() const
 {
-	return (mSimulationFrequencyOverride > 0.0f) ? mSimulationFrequencyOverride : (float)Configuration::instance().mSimulationFrequency;
+	return Configuration::instance().mClassicMode ? 60.0f : ((mSimulationFrequencyOverride > 0.0f) ? mSimulationFrequencyOverride : (float)Configuration::instance().mSimulationFrequency);
 }
 
 void Simulation::setSpeed(float emulatorSpeed)

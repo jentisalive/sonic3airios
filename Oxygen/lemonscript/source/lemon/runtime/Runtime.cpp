@@ -17,92 +17,6 @@
 
 namespace lemon
 {
-	namespace
-	{
-		int matchCallerProgramCounter(const Program& program, const ControlFlow::State& parentState, const ControlFlow::State& childLocation)
-		{
-			const std::vector<Opcode>& opcodes = parentState.mRuntimeFunction->mFunction->mOpcodes;
-			const int oldPC = (int)parentState.mRuntimeFunction->translateFromRuntimeProgramCounter(parentState.mProgramCounter);
-			int newPC = -1;
-
-			// Pass 1: Search normal function calls
-			{
-				const uint64 nameAndSignatureHash = childLocation.mRuntimeFunction->mFunction->getNameAndSignatureHash();
-				for (size_t k = 0; k < opcodes.size(); ++k)
-				{
-					if (opcodes[k].mType == Opcode::Type::CALL && (uint64)opcodes[k].mParameter == nameAndSignatureHash && opcodes[k].mDataType == BaseType::VOID)
-					{
-						const int programCounter = (int)(k + 1);
-						if (newPC == -1 || std::abs(programCounter - oldPC) < std::abs(newPC - oldPC))
-						{
-							newPC = programCounter;
-						}
-					}
-				}
-			}
-
-			// Pass 2: Search external calls, no filtering
-			if (newPC < 0)
-			{
-				for (size_t k = 0; k < opcodes.size(); ++k)
-				{
-					if (opcodes[k].mType == Opcode::Type::EXTERNAL_CALL)
-					{
-						const int programCounter = (int)(k + 1);
-						if (newPC == -1 || std::abs(programCounter - oldPC) < std::abs(newPC - oldPC))
-						{
-							newPC = programCounter;
-						}
-					}
-				}
-			}
-
-			// Pass 3: Search normal function calls to user functions
-			if (newPC < 0)
-			{
-				for (size_t k = 0; k < opcodes.size(); ++k)
-				{
-					if (opcodes[k].mType == Opcode::Type::CALL && opcodes[k].mDataType == BaseType::VOID)
-					{
-						const uint64 nameAndSignatureHash = (uint32)opcodes[k].mParameter;
-						const Function* function = program.getFunctionBySignature(nameAndSignatureHash);
-						if (nullptr != function && function->isA<NativeFunction>())
-						{
-							const int programCounter = (int)(k + 1);
-							if (newPC == -1 || std::abs(programCounter - oldPC) < std::abs(newPC - oldPC))
-							{
-								newPC = programCounter;
-							}
-						}
-					}
-				}
-			}
-
-			return (newPC == -1) ? oldPC : newPC;
-		}
-	}
-
-
-
-	template<> int8   MemoryAccessHandler::read(uint64 address)  { return read8 (address); }
-	template<> int16  MemoryAccessHandler::read(uint64 address)  { return read16(address); }
-	template<> int32  MemoryAccessHandler::read(uint64 address)  { return read32(address); }
-	template<> int64  MemoryAccessHandler::read(uint64 address)  { return read64(address); }
-	template<> uint8  MemoryAccessHandler::read(uint64 address)  { return read8 (address); }
-	template<> uint16 MemoryAccessHandler::read(uint64 address)  { return read16(address); }
-	template<> uint32 MemoryAccessHandler::read(uint64 address)  { return read32(address); }
-	template<> uint64 MemoryAccessHandler::read(uint64 address)  { return read64(address); }
-
-	template<> void MemoryAccessHandler::write(uint64 address, int8 value)   { write8 (address, value); }
-	template<> void MemoryAccessHandler::write(uint64 address, int16 value)  { write16(address, value); }
-	template<> void MemoryAccessHandler::write(uint64 address, int32 value)  { write32(address, value); }
-	template<> void MemoryAccessHandler::write(uint64 address, int64 value)  { write64(address, value); }
-	template<> void MemoryAccessHandler::write(uint64 address, uint8 value)  { write8 (address, value); }
-	template<> void MemoryAccessHandler::write(uint64 address, uint16 value) { write16(address, value); }
-	template<> void MemoryAccessHandler::write(uint64 address, uint32 value) { write32(address, value); }
-	template<> void MemoryAccessHandler::write(uint64 address, uint64 value) { write64(address, value); }
-
-
 
 	Runtime::Runtime()
 	{
@@ -725,208 +639,177 @@ namespace lemon
 
 	bool Runtime::serializeState(VectorBinarySerializer& serializer, std::string* outError)
 	{
-		// Format version history:
-		//  - 0x00 = First version, no signature yet
-		//  - 0x01 = Added signature and version number + serialize global variable names
-
-		if (nullptr == mProgram)
-		{
-			if (nullptr != outError)
-				*outError = "No program loaded";
+		// v2 stores the exact override and base-call depth for every frame. A name
+		// alone cannot distinguish a mod's wrapper from the base game function.
+		auto fail = [&](const char* error) {
+			if (outError) *outError = error;
 			return false;
-		}
-
-		if (serializer.isReading())
-		{
-			// Reset only the control flows, no full reset is needed here
-			//  -> In fact it would even cause issues down the line, as this is not meant to e.g. invalidate cached runtime functions
-			for (ControlFlow* controlFlow : mControlFlows)
-			{
-				controlFlow->reset();
-			}
-		}
-
-		// Signature and version number
-		const uint32 SIGNATURE = *(uint32*)"LMN|";
-		uint16 version = 0x01;
-		if (serializer.isReading())
-		{
-			const uint32 signature = *(const uint32*)serializer.peek();
-			if (signature == SIGNATURE)
-			{
-				serializer.skip(4);
-				version = serializer.read<uint16>();
-			}
-			else
-			{
-				version = 0;	// First serialization format version had no signature at all
-			}
-		}
-		else
+		};
+		if (!mProgram) return fail("No program loaded");
+		constexpr uint32 SIGNATURE = 0x7c4e4d4c; // LMN|
+		constexpr uint16 CURRENT_VERSION = 2;
+		constexpr uint32 MAX_CALL_FRAMES = 4096;
+		ControlFlow& flow = *mControlFlows[0];
+		if (!serializer.isReading())
 		{
 			serializer.write(SIGNATURE);
-			serializer.write(version);
+			serializer.write(CURRENT_VERSION);
+			serializer.writeAs<uint32>(flow.mCallStack.count);
+			for (size_t i = 0; i < flow.mCallStack.count; ++i)
+			{
+				const auto& state = flow.mCallStack[i];
+				const ScriptFunction& function = *state.mRuntimeFunction->mFunction;
+				uint32 functionIndex = 0;
+				while (mProgram->getFunctionBySignature(function.getNameAndSignatureHash(), functionIndex) != &function)
+				{
+					if (!mProgram->getFunctionBySignature(function.getNameAndSignatureHash(), functionIndex++))
+						return fail("Call stack function is not in the active program");
+				}
+				serializer.write(function.getName().getString());
+				serializer.write(function.getSignatureHash());
+				serializer.write(functionIndex);
+				serializer.writeAs<uint32>(state.mBaseCallIndex);
+				serializer.write(function.addToCompiledHash(rmx::startFNV1a_64()));
+				serializer.writeAs<uint32>(state.mRuntimeFunction->translateFromRuntimeProgramCounter(state.mProgramCounter));
+				const size_t end = i + 1 < flow.mCallStack.count ? flow.mCallStack[i + 1].mLocalVariablesStart : flow.mLocalVariablesSize;
+				serializer.writeAs<uint32>(end - state.mLocalVariablesStart);
+				for (size_t k = state.mLocalVariablesStart; k < end; ++k) serializer.write(flow.mLocalVariablesBuffer[k]);
+			}
+			const uint32 valueCount = uint32(flow.getValueStackSize());
+			serializer.write(valueCount);
+			for (size_t i = 0; i < valueCount; ++i) serializer.write(flow.mValueStackStart[i]);
+			serializer.writeAs<uint32>(mProgram->getGlobalVariables().size());
+			for (const Variable* variable : mProgram->getGlobalVariables())
+			{
+				serializer.write(variable->getName().getString());
+				const size_t offset = variable->isA<GlobalVariable>() ? variable->as<GlobalVariable>().getStaticMemoryOffset() : size_t(-1);
+				if (offset <= mStaticMemory.size() && sizeof(int64) <= mStaticMemory.size() - offset)
+					serializer.write(&mStaticMemory[offset], sizeof(int64));
+				else serializer.write<int64>(0);
+			}
+			return !serializer.hasError();
 		}
 
-		// Serialize call stack
-		// TODO: Support multiple control flows?
+		// Parse and validate into temporary storage before mutating a live VM.
+		// In particular, never resize CArray using a count already read into it:
+		// that can make resize copy beyond the previous allocation.
+		if (serializer.getRemaining() < 4) return fail("Truncated runtime state");
+		uint16 version = 0;
+		uint32 storedSignature = 0;
+		memcpy(&storedSignature, serializer.peek(), sizeof(storedSignature));
+		if (storedSignature == SIGNATURE)
 		{
-			ControlFlow& controlFlow = *mControlFlows[0];
-			serializer.serializeAs<uint32>(controlFlow.mCallStack.count);
-			if (serializer.isReading())
-			{
-				controlFlow.mCallStack.resize(controlFlow.mCallStack.count);
-				for (int i = 0; i < (int)controlFlow.mCallStack.count; ++i)
-				{
-					const std::string_view functionName = serializer.readStringView();
-					const uint64 nameHash = rmx::getMurmur2_64(functionName);
-					uint32 signatureHash = serializer.read<uint32>();
-					const Function* function = mProgram->getFunctionBySignature(nameHash + signatureHash, 0);	// Note that this does not support function overloading, but maybe that's no problem at all
-
-				#if 1
-					// This is only added (in early 2022) for compatibility with older save states and can be removed again somewhere down the line
-					if (nullptr == function && signatureHash == 0xd202ef8d)		// Signature hash for void functions has changed
-					{
-						signatureHash = 0x76e88724;
-						function = mProgram->getFunctionBySignature(nameHash + signatureHash, 0);	// Note that this does not support function overloading, but maybe that's no problem at all
-					}
-				#endif
-
-					if (nullptr == function || !function->isA<ScriptFunction>())
-					{
-						if (nullptr != outError)
-							*outError = "Could not match function signature for script function of name '" + std::string(functionName) + "'";
-						controlFlow.mCallStack.clear();
-						return false;
-					}
-
-					RuntimeFunction* runtimeFunction = getRuntimeFunction(function->as<ScriptFunction>());
-					controlFlow.mCallStack[i].mRuntimeFunction = runtimeFunction;
-					controlFlow.mCallStack[i].mProgramCounter = runtimeFunction->translateToRuntimeProgramCounter(serializer.read<uint32>());
-
-					controlFlow.mCallStack[i].mLocalVariablesStart = controlFlow.mLocalVariablesSize;
-					const size_t numLocalVars = serializer.read<uint32>();
-					for (size_t k = controlFlow.mLocalVariablesSize; k < controlFlow.mLocalVariablesSize + numLocalVars; ++k)
-					{
-						controlFlow.mLocalVariablesBuffer[k] = serializer.read<int64>();
-					}
-					controlFlow.mLocalVariablesSize += numLocalVars;
-					RMX_CHECK(controlFlow.mLocalVariablesSize <= ControlFlow::VAR_STACK_LIMIT, "Reached var stack limit, probably due to recursive function calls", RMX_REACT_THROW);
-				}
-
-				// Make corrections to the program counters for the case that the call points changed
-				for (int i = 0; i < (int)controlFlow.mCallStack.count - 1; ++i)
-				{
-					const size_t opcodeIndex = (size_t)matchCallerProgramCounter(*mProgram, controlFlow.mCallStack[i], controlFlow.mCallStack[i + 1]);
-					controlFlow.mCallStack[i].mProgramCounter = controlFlow.mCallStack[i].mRuntimeFunction->translateToRuntimeProgramCounter(opcodeIndex);
-				}
-			}
-			else
-			{
-				for (int i = 0; i < (int)controlFlow.mCallStack.count; ++i)
-				{
-					serializer.write(controlFlow.mCallStack[i].mRuntimeFunction->mFunction->getName().getString());
-					serializer.write(controlFlow.mCallStack[i].mRuntimeFunction->mFunction->getSignatureHash());
-					serializer.writeAs<uint32>(controlFlow.mCallStack[i].mRuntimeFunction->translateFromRuntimeProgramCounter(controlFlow.mCallStack[i].mProgramCounter));
-
-					const size_t localVarsStart = controlFlow.mCallStack[i].mLocalVariablesStart;
-					const size_t localVarsEnd = ((size_t)(i+1) < controlFlow.mCallStack.count) ? controlFlow.mCallStack[i+1].mLocalVariablesStart : controlFlow.mLocalVariablesSize;
-					serializer.writeAs<uint32>(localVarsEnd - localVarsStart);
-					for (size_t k = localVarsStart; k < localVarsEnd; ++k)
-					{
-						serializer.writeAs<int64>(controlFlow.mLocalVariablesBuffer[k]);
-					}
-				}
-			}
-
-			// Serialize value stack
-			if (serializer.isReading())
-			{
-				const uint32 size = serializer.read<uint32>();
-				controlFlow.mValueStackPtr = &controlFlow.mValueStackStart[size];
-				for (uint32 i = 0; i < size; ++i)
-				{
-					controlFlow.mValueStackStart[i] = serializer.read<uint64>();
-				}
-			}
-			else
-			{
-				const uint32 size = (uint32)controlFlow.getValueStackSize();
-				serializer.write(size);
-				for (size_t i = 0; i < size; ++i)
-				{
-					serializer.write(controlFlow.mValueStackStart[i]);
-				}
-			}
+			if (serializer.getRemaining() < 6) return fail("Truncated runtime header");
+			serializer.skip(4);
+			version = serializer.read<uint16>();
+			if (version > CURRENT_VERSION) return fail("Unsupported runtime state version");
 		}
-
-		// Serialize global variables
-		const size_t numGlobals = mProgram->getGlobalVariables().size();
-		if (version >= 0x01)
+		auto readName = [&](std::string_view& name) {
+			if (serializer.getRemaining() < 4) return false;
+			const uint32 length = serializer.read<uint32>();
+			if (length > 4096 || length > serializer.getRemaining()) return false;
+			name = length ? std::string_view(reinterpret_cast<const char*>(serializer.peek()), length) : std::string_view();
+			serializer.skip(length);
+			return true;
+		};
+		struct FrameData
 		{
-			if (serializer.isReading())
-			{
-				const size_t numGlobalsSerialized = (size_t)serializer.read<uint32>();
-				std::string name;
-				for (size_t i = 0; i < numGlobalsSerialized; ++i)
-				{
-					serializer.serialize(name);
-					const int64 value = serializer.read<uint64>();
-					const uint64 nameHash = rmx::getMurmur2_64(name);
-					Variable* variable = mProgram->getGlobalVariableByName(nameHash);
-					if (nullptr != variable && variable->isA<GlobalVariable>())
-					{
-						const size_t offset = variable->as<GlobalVariable>().getStaticMemoryOffset();
-						if (offset < mStaticMemory.size())
-							memcpy(&mStaticMemory[offset], &value, sizeof(int64));
-					}
-				}
-			}
-			else
-			{
-				serializer.writeAs<uint32>(numGlobals);
-				for (size_t i = 0; i < numGlobals; ++i)
-				{
-					Variable* variable = mProgram->getGlobalVariables()[i];
-					serializer.write(variable->getName().getString());
-					const size_t offset = (variable->isA<GlobalVariable>()) ? variable->as<GlobalVariable>().getStaticMemoryOffset() : 0xffffffff;
-					if (offset < mStaticMemory.size())
-						serializer.write(&mStaticMemory[offset], sizeof(int64));
-					else
-						serializer.write<int64>(0);
-				}
-			}
-		}
-		else
+			ControlFlow::State state;
+			std::vector<int64> locals;
+		};
+		std::vector<FrameData> frames;
+		if (serializer.getRemaining() < 4) return fail("Missing call stack");
+		const uint32 frameCount = serializer.read<uint32>();
+		if (frameCount > MAX_CALL_FRAMES || frameCount > serializer.getRemaining() / 16)
+			return fail("Invalid call stack size");
+		frames.reserve(frameCount);
+		size_t localsCount = 0;
+		for (uint32 i = 0; i < frameCount; ++i)
 		{
-			// Legacy code for version 0x00
-			if (serializer.isReading())
+			std::string_view name;
+			if (!readName(name) || serializer.getRemaining() < (version >= 2 ? 28u : 12u))
+				return fail("Truncated call stack entry");
+			uint32 signature = serializer.read<uint32>();
+			const uint32 functionIndex = version >= 2 ? serializer.read<uint32>() : 0;
+			const uint32 baseCallIndex = version >= 2 ? serializer.read<uint32>() : 0;
+			const uint64 codeHash = version >= 2 ? serializer.read<uint64>() : 0;
+			const uint64 nameHash = rmx::getMurmur2_64(name);
+			const Function* function = mProgram->getFunctionBySignature(nameHash + signature, functionIndex);
+			if (!function && signature == 0xd202ef8d)
 			{
-				const size_t numGlobalsSerialized = (size_t)serializer.read<uint32>();
-				const size_t numGlobalsShared = std::min(numGlobalsSerialized, numGlobals);
-				for (size_t i = 0; i < numGlobalsShared; ++i)
-				{
-					const int64 value = serializer.read<uint64>();
-					RMX_CHECK(i < numGlobals, "Invalid global variable index", continue);
-					Variable* variable = mProgram->getGlobalVariables()[i];
-					if (variable->isA<GlobalVariable>())
-					{
-						const size_t offset = variable->as<GlobalVariable>().getStaticMemoryOffset();
-						memcpy(&mStaticMemory[offset], &value, sizeof(int64));
-					}
-				}
-				if (numGlobalsSerialized > numGlobals)
-				{
-					serializer.skip((numGlobalsShared - numGlobals) * 8);
-				}
+				signature = 0x76e88724;
+				function = mProgram->getFunctionBySignature(nameHash + signature, functionIndex);
 			}
-			else
-			{
-				RMX_ERROR("Saving as version 0x00 is not supported", );
-			}
+			if (!function || !function->isA<ScriptFunction>()) return fail("Saved script function is missing");
+			if (version < 2 && mProgram->getFunctionBySignature(nameHash + signature, 1))
+				return fail("Legacy state has ambiguous overridden functions; record again");
+			const auto& scriptFunction = function->as<ScriptFunction>();
+			if (version >= 2 && scriptFunction.addToCompiledHash(rmx::startFNV1a_64()) != codeHash)
+				return fail("Saved script function code has changed");
+			const uint32 pc = serializer.read<uint32>();
+			const uint32 localCount = serializer.read<uint32>();
+			if (pc >= scriptFunction.mOpcodes.size() || baseCallIndex > MAX_CALL_FRAMES)
+				return fail("Invalid script program counter or base-call depth");
+			if (localCount > ControlFlow::VAR_STACK_LIMIT - localsCount || localCount > serializer.getRemaining() / sizeof(int64))
+				return fail("Invalid local variable stack size");
+			RuntimeFunction* runtimeFunction = getRuntimeFunction(scriptFunction);
+			if (!runtimeFunction) return fail("Could not build saved script function");
+			FrameData frame;
+			frame.state.mRuntimeFunction = runtimeFunction;
+			frame.state.mBaseCallIndex = baseCallIndex;
+			frame.state.mProgramCounter = runtimeFunction->translateToRuntimeProgramCounter(pc);
+			frame.state.mLocalVariablesStart = localsCount;
+			frame.locals.resize(localCount);
+			for (auto& value : frame.locals) value = serializer.read<int64>();
+			localsCount += localCount;
+			frames.push_back(std::move(frame));
 		}
-
-		// Done
+		if (serializer.getRemaining() < 4) return fail("Missing value stack");
+		const uint32 valueCount = serializer.read<uint32>();
+		if (valueCount >= ControlFlow::VALUE_STACK_LAST_INDEX - ControlFlow::VALUE_STACK_FIRST_INDEX ||
+			valueCount > serializer.getRemaining() / sizeof(uint64)) return fail("Invalid value stack size");
+		std::vector<uint64> values(valueCount);
+		for (auto& value : values) value = serializer.read<uint64>();
+		if (serializer.getRemaining() < 4) return fail("Missing globals");
+		const uint32 globalsCount = serializer.read<uint32>();
+		if (globalsCount > 100000 || globalsCount > serializer.getRemaining() / (version ? 12u : 8u))
+			return fail("Invalid global variable count");
+		std::vector<std::pair<const GlobalVariable*, int64>> globals;
+		globals.reserve(globalsCount);
+		for (uint32 i = 0; i < globalsCount; ++i)
+		{
+			const Variable* variable = nullptr;
+			if (version)
+			{
+				std::string_view name;
+				if (!readName(name)) return fail("Truncated global variable name");
+				variable = mProgram->getGlobalVariableByName(rmx::getMurmur2_64(name));
+			}
+			else if (i < mProgram->getGlobalVariables().size()) variable = mProgram->getGlobalVariables()[i];
+			if (serializer.getRemaining() < sizeof(int64)) return fail("Truncated global variable value");
+			const int64 value = serializer.read<int64>();
+			if (variable && variable->isA<GlobalVariable>()) globals.emplace_back(&variable->as<GlobalVariable>(), value);
+		}
+		if (serializer.hasError()) return fail("Truncated runtime state");
+		for (ControlFlow* controlFlow : mControlFlows) controlFlow->reset();
+		flow.mCallStack.resize(frameCount);
+		flow.mCallStack.count = frameCount;
+		for (size_t i = 0; i < frames.size(); ++i)
+		{
+			flow.mCallStack[i] = frames[i].state;
+			std::copy(frames[i].locals.begin(), frames[i].locals.end(), flow.mLocalVariablesBuffer + frames[i].state.mLocalVariablesStart);
+		}
+		flow.mLocalVariablesSize = localsCount;
+		flow.mValueStackPtr = flow.mValueStackStart + values.size();
+		std::copy(values.begin(), values.end(), flow.mValueStackStart);
+		for (const auto& global : globals)
+		{
+			const size_t offset = global.first->getStaticMemoryOffset();
+			if (offset <= mStaticMemory.size() && sizeof(int64) <= mStaticMemory.size() - offset)
+				memcpy(&mStaticMemory[offset], &global.second, sizeof(int64));
+		}
+		// Exact snapshots must retain caller PCs, including indirect/base calls.
+		// Guessing another call site can change control flow even without mods.
 		return true;
 	}
 
