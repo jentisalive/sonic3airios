@@ -13,7 +13,7 @@ An experimental native port of Sonic 3 A.I.R., powered by the Oxygen Engine, SDL
 ![Status](https://img.shields.io/badge/status-experimental-F5A623?style=flat-square)
 [![License](https://img.shields.io/badge/license-GPL--3.0-2EA44F?style=flat-square)](LICENSE)
 
-**[Download v0.2.7](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.7)** · **[All releases](https://github.com/jentisalive/sonic3airios/releases)** · **[Build guide](Oxygen/sonic3air/build/_ios/README.md)** · **[Original project](https://sonic3air.org/)**
+**[iOS v0.2.7](https://github.com/jentisalive/sonic3airios/releases/tag/ios-v0.2.7)** · **[Windows x64 v0.2.7](https://github.com/jentisalive/sonic3airios/releases/tag/windows-v0.2.7)** · **[All releases](https://github.com/jentisalive/sonic3airios/releases)** · **[Build guide](Oxygen/sonic3air/build/_ios/README.md)** · **[Original project](https://sonic3air.org/)**
 
 </div>
 
@@ -27,7 +27,8 @@ This port runs the game's C++ engine and LemonScript interpreter directly on iOS
 - **Retina output** — window rendering and final scaling use the display's backing pixels.
 - **Your files, accessible** — saves, settings and mods live in the app's Documents folder.
 - **Mods within reach** — English installation guidance and an **Open mods folder** button.
-- **Build from Windows** — GitHub Actions compiles and packages the iOS app on a macOS runner.
+- **Play on Windows x64** — native desktop build with Classic, shared saves, Speedrun Mode and replays. See the [Windows guide](tools/windows/README.md).
+- **Build iOS from Windows** — GitHub Actions compiles and packages the iOS app on a macOS runner.
 
 > **Bring your own game.** A compatible, unmodified Sonic 3 & Knuckles ROM is required. The ROM is not included or downloaded by the app.
 

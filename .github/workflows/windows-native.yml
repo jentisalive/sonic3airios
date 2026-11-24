@@ -1,0 +1,75 @@
+name: Native Windows x64
+on:
+  push:
+    branches: [ios-native]
+    paths:
+      - 'Oxygen/**'
+      - 'librmx/**'
+      - 'framework/**'
+      - 'tools/windows/**'
+      - '.github/workflows/windows-native.yml'
+  pull_request:
+    branches: [ios-native]
+    paths:
+      - 'Oxygen/**'
+      - 'librmx/**'
+      - 'framework/**'
+      - 'tools/windows/**'
+      - '.github/workflows/windows-native.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: windows-native-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
+      - name: Build and verify Windows ZIP
+        shell: pwsh
+        run: ./tools/windows/build.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Sonic3AIR-Windows-x64
+          path: dist-windows/Sonic3AIR-Windows-x64.zip
+          if-no-files-found: error
+          compression-level: 0
+  release:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/ios-native'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: Sonic3AIR-Windows-x64
+          path: release-files
+      - name: Publish Windows release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          RELEASE_TAG: windows-v0.2.7
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Windows release $RELEASE_TAG is already published."
+            exit 0
+          fi
+          gh release create "$RELEASE_TAG" release-files/Sonic3AIR-Windows-x64.zip \
+            --target "$SOURCE_SHA" --prerelease \
+            --title "Sonic 3 A.I.R. Windows x64 0.2.7 (experimental)" \
+            --notes-file tools/windows/README.md
