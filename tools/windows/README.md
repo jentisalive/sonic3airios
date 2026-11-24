@@ -14,6 +14,6 @@ Recordings from port versions 0.2.5 and 0.2.6 need to be recorded again.
 
 To build from source, open Developer PowerShell for Visual Studio 2022 with the
 Desktop development with C++ workload installed. From the repository root, run
-`./Oxygen/sonic3air/build/_windows/build.ps1`. The ZIP goes to `dist-windows`.
+`./tools/windows/build.ps1`. The ZIP goes to `dist-windows`.
 GitHub Actions also builds the ZIP from the vendored dependencies and checks that
 the packaged executable starts without a missing DLL.

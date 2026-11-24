@@ -3,7 +3,7 @@
 param([string]$OutputDirectory = (Join-Path $PWD 'dist-windows'))
 
 $ErrorActionPreference = 'Stop'
-$root = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
+$root = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $output = [IO.Path]::GetFullPath($OutputDirectory)
 $msbuild = (Get-Command MSBuild.exe -CommandType Application).Source
 
@@ -37,9 +37,10 @@ try {
         $env:_CL_ = $originalCl
     }
     Build-Solution "$ext/zlib/_vstudio/zlib.sln"
+    Copy-Headers "$ext/sdl/SDL2/include/*.h" sdl
+    Copy-Libraries "$ext/sdl/SDL2/VisualC/x64/Release/*.lib" sdl
     Build-Solution "$ext/imgui/_vstudio/imgui.sln"
 
-    Copy-Headers "$ext/sdl/SDL2/include/*.h" sdl
     Copy-Headers "$ext/ogg-vorbis/libogg/include/ogg/*.h" ogg
     Copy-Headers "$ext/ogg-vorbis/libvorbis/include/vorbis/*.h" vorbis
     Copy-Headers "$ext/curl/curl/include/curl/*.h" curl
@@ -48,7 +49,6 @@ try {
     Copy-Headers "$ext/imgui/imgui/*.h" imgui
     Copy-Headers "$ext/imgui/imgui/backends/*.h" 'imgui/backends'
 
-    Copy-Libraries "$ext/sdl/SDL2/VisualC/x64/Release/*.lib" sdl
     Copy-Libraries "$ext/ogg-vorbis/libogg/win32/VS2015/x64/Release/libogg.lib" libogg
     Copy-Libraries "$ext/ogg-vorbis/libvorbis/win32/VS2010/x64/Release/*.lib" libvorbis
     Copy-Libraries "$ext/curl/curl/build/Win64/VC14.30/LIB Release - DLL Windows SSPI/libcurl.lib" curl
@@ -60,7 +60,7 @@ try {
     Build-Solution "$game/build/_vstudio/sonic3air.sln"
 
     # Match the engine's loose data layout and keep the scripts used by this build.
-    # The ZIP contains only tracked project resources and the built binaries.
+    # Stage the data and scripts separately from the build and save folders.
     New-Item -ItemType Directory -Force -Path $output | Out-Null
     $stage = Join-Path ([IO.Path]::GetTempPath()) "Sonic3AIR-$([Guid]::NewGuid())"
     New-Item -ItemType Directory -Path $stage | Out-Null
@@ -69,7 +69,7 @@ try {
         Copy-Item "$game/source/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dll" $stage
         Copy-Item "$game/data", "$game/scripts" $stage -Recurse
         Copy-Item 'Oxygen/oxygenengine/data/*' "$stage/data/" -Recurse -Force
-        Copy-Item "$game/_master_image_template/config.json" $stage
+        Copy-Item "$game/_master_image_template/config.json", "$game/_master_image_template/Manual.pdf" $stage
         Copy-Item LICENSE "$stage/LICENSE.txt"
         Copy-Item "$PSScriptRoot/README.md" "$stage/README-Windows.md"
 

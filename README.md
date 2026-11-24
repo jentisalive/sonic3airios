@@ -27,7 +27,7 @@ This port runs the game's C++ engine and LemonScript interpreter directly on iOS
 - **Retina output** — window rendering and final scaling use the display's backing pixels.
 - **Your files, accessible** — saves, settings and mods live in the app's Documents folder.
 - **Mods within reach** — English installation guidance and an **Open mods folder** button.
-- **Play on Windows x64** — native desktop build with Classic, shared saves, Speedrun Mode and replays. See the [Windows guide](Oxygen/sonic3air/build/_windows/README.md).
+- **Play on Windows x64** — native desktop build with Classic, shared saves, Speedrun Mode and replays. See the [Windows guide](tools/windows/README.md).
 - **Build iOS from Windows** — GitHub Actions compiles and packages the iOS app on a macOS runner.
 
 > **Bring your own game.** A compatible, unmodified Sonic 3 & Knuckles ROM is required. The ROM is not included or downloaded by the app.

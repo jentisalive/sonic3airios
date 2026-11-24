@@ -6,6 +6,7 @@ on:
       - 'Oxygen/**'
       - 'librmx/**'
       - 'framework/**'
+      - 'tools/windows/**'
       - '.github/workflows/windows-native.yml'
   pull_request:
     branches: [ios-native]
@@ -13,6 +14,7 @@ on:
       - 'Oxygen/**'
       - 'librmx/**'
       - 'framework/**'
+      - 'tools/windows/**'
       - '.github/workflows/windows-native.yml'
   workflow_dispatch:
 permissions:
@@ -33,7 +35,7 @@ jobs:
           msbuild-architecture: x64
       - name: Build and verify Windows ZIP
         shell: pwsh
-        run: ./Oxygen/sonic3air/build/_windows/build.ps1
+        run: ./tools/windows/build.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: Sonic3AIR-Windows-x64
@@ -70,4 +72,4 @@ jobs:
           gh release create "$RELEASE_TAG" release-files/Sonic3AIR-Windows-x64.zip \
             --target "$SOURCE_SHA" --prerelease \
             --title "Sonic 3 A.I.R. Windows x64 0.2.7 (experimental)" \
-            --notes-file Oxygen/sonic3air/build/_windows/README.md
+            --notes-file tools/windows/README.md
