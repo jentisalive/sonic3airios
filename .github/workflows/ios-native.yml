@@ -31,7 +31,8 @@ jobs:
         run: bash Oxygen/sonic3air/build/_ios/tests/run-profile-test.sh
   build:
     needs: profile-test
-    runs-on: macos-15
+    # Avoid the constrained macOS ARM runner pool; the iPhone target stays arm64.
+    runs-on: macos-15-intel
     env:
       DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
     timeout-minutes: 45
